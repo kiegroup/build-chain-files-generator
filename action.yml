@@ -1,0 +1,24 @@
+name: "Build Chain Files Generator."
+author: "Enrique Mingorance Cano <emingora@redhat.com>"
+description: |
+  NodeJS tool to create files based on build configuration.
+inputs:
+  definition-file:
+    description: "the file where the build chain is defined. It can a file in the same repository (relative path) or a URL"
+    required: true
+  file-type:
+    description: "the file type to generate. It can be either 'image' or 'repository-list'"
+    required: true
+  output-file-path:
+    description: "the output file path to store the produced file"
+    required: true
+  font:
+    description: "the font used to generate image, something like `14px Arial`"
+    default: "12px IBM Plex Sans Condensed 2"
+    required: false
+runs:
+  using: "node12"
+  main: "dist/index.js"
+branding:
+  icon: "box"
+  color: "red"
