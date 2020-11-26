@@ -36,13 +36,9 @@
   },
   "dependencies": {
     "@actions/core": "^1.1.3",
-    "@actions/exec": "^1.0.4",
     "@kie/build-chain-configuration-reader": "^2.0.2",
     "argparse": "^2.0.1",
     "dotenv": "^8.2.0",
-    "fs-extra": "^9.0.0",
-    "js-yaml": "^3.14.0",
-    "tmp": "^0.2.1",
     "tree-image-drawer": "^1.1.2"
   },
   "devDependencies": {
@@ -74,6 +70,6 @@
     "arrowParens": "avoid"
   },
   "engines": {
-    "node": ">= 12.18.0"
+    "node": ">= 10.x"
   }
 }
