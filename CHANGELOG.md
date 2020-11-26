@@ -8,3 +8,4 @@
 
 - basic image generation based on the while definition file
 - repository list generation
+- exclude functionallity

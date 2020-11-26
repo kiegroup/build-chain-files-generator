@@ -16,6 +16,12 @@ inputs:
     description: "the font used to generate image, something like `14px Arial`"
     default: "12px IBM Plex Sans Condensed 2"
     required: false
+  exclude:
+    description: "The list of projects or branches to exclude"
+    required: false
+  include:
+    description: "The list of projects or branches to include"
+    required: false
 runs:
   using: "node12"
   main: "dist/index.js"

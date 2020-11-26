@@ -3,7 +3,6 @@ function getArguments(subParser) {
     help: "image generation"
   });
   buildParser.add_argument("-font", {
-    metavar: "<URL>",
     nargs: 1,
     required: false,
     help:

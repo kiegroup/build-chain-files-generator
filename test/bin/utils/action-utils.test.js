@@ -2,6 +2,8 @@ const {
   getDefinitionFile,
   getFileType,
   getOutputFilePath,
+  getExclude,
+  getInclude,
   getFont
 } = require("../../../bin/utils/action-utils");
 
@@ -49,6 +51,78 @@ test("getOutputFilePath", () => {
 
   // Assert
   expect(result).toEqual(expectedResult);
+});
+
+test("getExclude string", () => {
+  // Arrange
+  const expectedResult = "thevalue";
+  getInput.mockImplementationOnce(param =>
+    param === "exclude" ? expectedResult : undefined
+  );
+  // Act
+  const result = getExclude();
+
+  // Assert
+  expect(result).toEqual([expectedResult]);
+});
+
+test("getExclude array", () => {
+  // Arrange
+  const expectedResult = ["element1", "element2"];
+  getInput.mockImplementationOnce(param =>
+    param === "exclude" ? expectedResult : undefined
+  );
+  // Act
+  const result = getExclude();
+
+  // Assert
+  expect(result).toEqual(expectedResult);
+});
+
+test("getExclude undefined", () => {
+  // Arrange
+  getInput.mockImplementationOnce(() => undefined);
+  // Act
+  const result = getExclude();
+
+  // Assert
+  expect(result).toEqual(undefined);
+});
+
+test("getInclude string", () => {
+  // Arrange
+  const expectedResult = "thevalue";
+  getInput.mockImplementationOnce(param =>
+    param === "include" ? expectedResult : undefined
+  );
+  // Act
+  const result = getInclude();
+
+  // Assert
+  expect(result).toEqual([expectedResult]);
+});
+
+test("getInclude array", () => {
+  // Arrange
+  const expectedResult = ["element1", "element2"];
+  getInput.mockImplementationOnce(param =>
+    param === "include" ? expectedResult : undefined
+  );
+  // Act
+  const result = getInclude();
+
+  // Assert
+  expect(result).toEqual(expectedResult);
+});
+
+test("getExclude undefined", () => {
+  // Arrange
+  getInput.mockImplementationOnce(() => undefined);
+  // Act
+  const result = getInclude();
+
+  // Assert
+  expect(result).toEqual(undefined);
 });
 
 test("getFont", () => {

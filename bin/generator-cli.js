@@ -23,7 +23,10 @@ async function main() {
     );
   }
   if (args["file-type"] === "repository-list") {
-    await generateRepositoryList(args.df[0], args.o[0]);
+    await generateRepositoryList(args.df[0], args.o[0], {
+      exclude: args.exclude,
+      include: args.include
+    });
   }
 }
 
