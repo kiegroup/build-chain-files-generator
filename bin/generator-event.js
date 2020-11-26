@@ -7,6 +7,8 @@ const {
   getDefinitionFile,
   getFileType,
   getOutputFilePath,
+  getExclude,
+  getInclude,
   getFont
 } = require("./utils/action-utils");
 require("dotenv").config();
@@ -15,7 +17,10 @@ async function main() {
   if (getFileType() === "image") {
     await generateImage(getDefinitionFile(), getOutputFilePath(), getFont());
   } else if (getFileType() === "repository-list") {
-    await generateRepositoryList(getDefinitionFile(), getOutputFilePath());
+    await generateRepositoryList(getDefinitionFile(), getOutputFilePath(), {
+      exclude: getExclude(),
+      include: getInclude()
+    });
   } else {
     throw new Error(
       `file type input value '${getFileType()}' is not supported. Please check documentation.`
