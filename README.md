@@ -42,6 +42,26 @@ It's a tool either to be used as a javascript library, a CLI or a github actions
 
   > **_Note:_** It make sense in case this is part of a flow where the files are either archived or stored as a new push to the repository/pull request.
 
+- **exclude** (optional): The list of projects or branches to exclude from project-list generation. For instance:
+
+  > ```
+  > exclude: groupx/projectx  # it will exclude groupx/projectx from the list
+  > exclude: |                # it will exclude groupx/projectx, groupx/projecty and all the projects where the mapping is master:7.x
+  >       groupx/projectx
+  >       groupx/projecty
+  >       @master:7.x
+  > ```
+
+- **include** (optional): The list of projects or branches to include from project-list generation. For instance:
+
+  > ```
+  > include: groupx/projectx  # it will include groupx/projectx from the list
+  > include: |                # it will include groupx/projectx, groupx/projecty and all the projects where the mapping is master:7.x
+  >       groupx/projectx
+  >       groupx/projecty
+  >       @master:7.x
+  > ```
+
 - **font** (optional): The font size and name to produce the image. For instance:
 
   > ```
@@ -53,20 +73,25 @@ It's a tool either to be used as a javascript library, a CLI or a github actions
 
 ### Generate Image
 
-Check this example: `build-chain-files-generator -df https://raw.githubusercontent.com/kiegroup/droolsjbpm-build-bootstrap/master/.ci/pull-request-config.yaml -o image.png image`
+Check this example: `build-chain-files-generator -df https://raw.githubusercontent.com/kiegroup/droolsjbpm-build-bootstrap/master/.ci/pull-request-config.yaml -o image.png image -font "14px Arial"`
 
 where:
 
 - `-df`: is the definition file
 - `-o`: the file path to store the file
 - `image`: the file type to generate
+- `-font` (optional): the font to use
 
 ### Generate Repository list file
 
-Check this example: `build-chain-files-generator -df ./pull-request-config.yaml -o file.txt repository-list`
+Check this example:
+
+> `build-chain-files-generator -df ./pull-request-config.yaml -o file.txt repository-list -exclude "groupx/projectX" "@master:main"` > `build-chain-files-generator -df ./pull-request-config.yaml -o file.txt repository-list -include "groupx/projectY" "@main:master"`
 
 where:
 
 - `-df`: is the definition file
 - `-o`: the file path to store the file
 - `image`: the file type to generate
+- `-exclude` (optional): the project list or mapping to exclude
+- `-include` (optional): the project list or mapping to include
