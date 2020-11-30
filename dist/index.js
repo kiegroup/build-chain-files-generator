@@ -1873,7 +1873,9 @@ async function generate(tree, output, font = "14px Liberation Serif") {
     displayType: "text",
     colors: {
       block: "rgba(0, 0, 0, 255)",
-      line: "rgba(0, 0, 0, 255)"
+      line: "rgba(0, 0, 0, 255)",
+      font: "rgba(0, 0, 0, 255)",
+      background: "rgba(255, 255, 255, 255)"
     },
     font
   };
