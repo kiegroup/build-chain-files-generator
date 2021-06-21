@@ -1008,8 +1008,11 @@ const { validateNode } = __webpack_require__(127);
  * @param {string} file - The definition file. It can be a URL or a in the filesystem.
  * @param {Object} urlPlaceHolders the url place holders to replace url. This is needed in case either the definition file or the dependencies file are loaded from a URL
  */
-async function getTree(file, urlPlaceHolders = {}) {
-  const definition = await readDefinitionFile(file, urlPlaceHolders);
+async function getTree(
+  file,
+  options = { urlPlaceHolders: {}, token: undefined }
+) {
+  const definition = await readDefinitionFile(file, options);
   return dependencyListToTree(definition.dependencies, definition);
 }
 
@@ -1020,12 +1023,12 @@ async function getTree(file, urlPlaceHolders = {}) {
  * @param {string} project - The project name to look for.
  * @param {Object} urlPlaceHolders the url place holders to replace url. This is needed in case either the definition file or the dependencies file are loaded from a URL
  */
-async function getTreeForProject(file, project, urlPlaceHolders = {}) {
-  return lookForProject(
-    await getTree(file, urlPlaceHolders),
-    project,
-    undefined
-  );
+async function getTreeForProject(
+  file,
+  project,
+  options = { urlPlaceHolders: {}, token: undefined }
+) {
+  return lookForProject(await getTree(file, options), project);
 }
 
 /**
@@ -1072,6 +1075,11 @@ function dependencyListToTree(dependencyList, buildConfiguration) {
 
     if (node.dependencies && node.dependencies.length > 0) {
       node.dependencies.forEach(dependency => {
+        if ([null, undefined].includes(map[dependency.project])) {
+          const errorMessage = `The project ${dependency.project} does not exist on project list. Please review your project definition file`;
+          console.error(errorMessage);
+          throw new Error(errorMessage);
+        }
         dependencyList[map[dependency.project].index].children.push({
           ...map[node.project].node
         });
@@ -1171,7 +1179,7 @@ module.exports = { generateImage };
 
 const assert = __webpack_require__(357);
 
-const allowedVersions = ["2.0"];
+const allowedVersions = ["2.1"];
 
 function validateDefinition(definition) {
   assert(
@@ -1684,8 +1692,11 @@ const { parentChainFromNode } = __webpack_require__(636);
  * @param {string} file - The definition file. It can be a URL or a in the filesystem.
  * @param {string} project - The project name to look for.
  */
-async function getOrderedListForTree(file, urlPlaceHolders = {}) {
-  const tree = await getTree(file, urlPlaceHolders);
+async function getOrderedListForTree(
+  file,
+  options = { urlPlaceHolders: {}, token: undefined }
+) {
+  const tree = await getTree(file, options);
   return getOrderedList(tree);
 }
 
@@ -1694,8 +1705,12 @@ async function getOrderedListForTree(file, urlPlaceHolders = {}) {
  * @param {string} file - The definition file. It can be a URL or a in the filesystem.
  * @param {string} project - The project name to look for.
  */
-async function getOrderedListForProject(file, project, urlPlaceHolders = {}) {
-  const tree = await getTreeForProject(file, project, urlPlaceHolders);
+async function getOrderedListForProject(
+  file,
+  project,
+  options = { urlPlaceHolders: {}, token: undefined }
+) {
+  const tree = await getTreeForProject(file, project, options);
   return getOrderedList([tree]);
 }
 
@@ -2236,7 +2251,7 @@ function getBuild(project, buildConfiguration) {
  * @param {Object} target
  * @param {Object} source
  */
-function overrideProperties(target, source) {
+function overrideProperties(target, source, merge = false) {
   const targetClone = { ...target };
   const sourceClone = { ...source };
   Object.entries(targetClone)
@@ -2245,10 +2260,14 @@ function overrideProperties(target, source) {
       if (typeof value === "object") {
         targetClone[key] = overrideProperties(
           targetClone[key],
-          sourceClone[key]
+          sourceClone[key],
+          merge || (sourceClone.merge && sourceClone.merge.includes(key))
         );
       } else {
-        targetClone[key] = sourceClone[key];
+        targetClone[key] =
+          merge || (sourceClone.merge && sourceClone.merge.includes(key))
+            ? mergeElements(targetClone[key], sourceClone[key], key)
+            : sourceClone[key];
       }
     });
 
@@ -2256,6 +2275,14 @@ function overrideProperties(target, source) {
     .filter(key => !targetClone[key])
     .forEach(key => (targetClone[key] = sourceClone[key]));
   return targetClone;
+}
+
+function mergeElements(target, source) {
+  const treatedTarget =
+    typeof target === "string" ? [...target.split("\n")] : [...target];
+  const treatedSource =
+    typeof source === "string" ? [...source.split("\n")] : [...source];
+  return [...treatedTarget, ...treatedSource];
 }
 
 /**
@@ -4877,22 +4904,27 @@ module.exports = new Schema({
 const http = __webpack_require__(605);
 const https = __webpack_require__(211);
 
-function requestUrl(url) {
+function requestUrl(url, token) {
+  const options = token ? { headers: { Authorization: `token ${token}` } } : {};
   return new Promise((resolve, reject) => {
-    (url.startsWith("https://") ? https : http).get(url, response => {
-      let chunks_of_data = [];
-      response.on("data", fragments => chunks_of_data.push(fragments));
-      response.on("end", () =>
-        resolve(Buffer.concat(chunks_of_data).toString())
-      );
-      response.on("error", error => reject(error));
-    });
+    (url.startsWith("https://") ? https : http)
+      .get(url, options, response => {
+        if (response.statusCode < 200 || response.statusCode > 299) {
+          reject(`Status: ${response.statusCode}. ${response.statusMessage}`);
+        }
+        let chunks_of_data = [];
+        response.on("data", fragments => chunks_of_data.push(fragments));
+        response.on("end", () =>
+          resolve(Buffer.concat(chunks_of_data).toString())
+        );
+      })
+      .on("error", error => reject(error));
   });
 }
 
-async function getUrlContent(url) {
+async function getUrlContent(url, token = undefined) {
   try {
-    return await requestUrl(url);
+    return await requestUrl(url, token);
   } catch (error) {
     throw new Error(`Error getting ${url}. Error: ${error}`);
   }
@@ -5215,9 +5247,9 @@ function read(fileContent) {
   try {
     return yaml.safeLoad(fileContent);
   } catch (e) {
-    throw new ReadYamlException(
-      `error reading yaml file content. Error: ${e.message}`
-    );
+    const errorMessage = `error reading yaml file content. Error: ${e.message}`;
+    console.error(errorMessage);
+    throw new ReadYamlException(errorMessage);
   }
 }
 
@@ -6392,7 +6424,7 @@ module.exports = require("process");
 const fs = __webpack_require__(747);
 
 const { getUrlContent } = __webpack_require__(593);
-const { treatUrl } = __webpack_require__(824);
+const { treatUrl, treatMapping } = __webpack_require__(824);
 const {
   validateDefinition,
   validateDependencies
@@ -6405,10 +6437,13 @@ const { read: readYaml } = __webpack_require__(674);
  * @param {string} file - The definition file. It can be a URL or a in the filesystem.
  * @param {Object} urlPlaceHolders the url place holders to replace url. This is needed in case either the definition file or the dependencies file are loaded from a URL
  */
-async function readDefinitionFile(file, urlPlaceHolders = {}) {
+async function readDefinitionFile(
+  file,
+  options = { urlPlaceHolders: {}, token: undefined }
+) {
   return file.startsWith("http")
-    ? readDefinitionFileFromUrl(file, urlPlaceHolders)
-    : readDefinitionFileFromFile(file, urlPlaceHolders);
+    ? readDefinitionFileFromUrl(file, options)
+    : readDefinitionFileFromFile(file, options.urlPlaceHolders);
 }
 
 /**
@@ -6416,13 +6451,16 @@ async function readDefinitionFile(file, urlPlaceHolders = {}) {
  * @param {String} filePath the definition file path
  * @param {Object} urlPlaceHolders the url place holders to replace url
  */
-async function readDefinitionFileFromFile(filePath, urlPlaceHolders) {
+async function readDefinitionFileFromFile(
+  filePath,
+  options = { urlPlaceHolders: {}, token: undefined }
+) {
   const defintionFileContent = fs.readFileSync(filePath, "utf8");
   return loadYaml(
     readYaml(defintionFileContent),
     filePath.substring(0, filePath.lastIndexOf("/")),
     defintionFileContent,
-    urlPlaceHolders
+    options
   );
 }
 
@@ -6431,13 +6469,16 @@ async function readDefinitionFileFromFile(filePath, urlPlaceHolders) {
  * @param {String} url the url to the definition file
  * @param {Object} urlPlaceHolders the url place holders to replace url
  */
-async function readDefinitionFileFromUrl(url, urlPlaceHolders) {
-  const treatedUrl = treatUrl(url, urlPlaceHolders);
+async function readDefinitionFileFromUrl(
+  url,
+  options = { urlPlaceHolders: {}, token: undefined }
+) {
+  const treatedUrl = treatUrl(url, options.urlPlaceHolders);
   return loadYaml(
-    readYaml(await getUrlContent(treatedUrl)),
+    readYaml(await getUrlContent(treatedUrl, options.token)),
     "./",
     url,
-    urlPlaceHolders
+    options
   );
 }
 
@@ -6452,15 +6493,21 @@ async function loadYaml(
   definitionYaml,
   definitionFileFolder,
   containerPath,
-  urlPlaceHolders
+  options = { urlPlaceHolders: {}, token: undefined }
 ) {
   validateDefinition(definitionYaml);
   definitionYaml.dependencies = await loadDependencies(
     definitionYaml.dependencies,
     definitionFileFolder,
     containerPath,
-    urlPlaceHolders
+    options
   );
+  if (definitionYaml.dependencies) {
+    definitionYaml.dependencies
+      .filter(dependency => dependency.mapping)
+      .map(dependency => dependency.mapping)
+      .forEach(mapping => treatMapping(mapping));
+  }
   return definitionYaml;
 }
 
@@ -6475,7 +6522,7 @@ async function loadDependencies(
   dependencies,
   definitionFileFolder,
   containerPath,
-  urlPlaceHolders
+  options = { urlPlaceHolders: {}, token: undefined }
 ) {
   let dependenciesFinalPath = dependencies;
   if (dependencies) {
@@ -6484,24 +6531,26 @@ async function loadDependencies(
       !Array.isArray(dependencies) &&
       !dependencies.startsWith("http")
     ) {
-      const treatedUrl = treatUrl(containerPath, urlPlaceHolders);
+      const treatedUrl = treatUrl(containerPath, options.urlPlaceHolders);
       dependenciesFinalPath = `${treatedUrl.substring(
         0,
         treatedUrl.lastIndexOf("/")
       )}/${dependencies}`;
-      const dependenciesContent = await getUrlContent(dependenciesFinalPath);
+      const dependenciesContent = await getUrlContent(
+        dependenciesFinalPath,
+        options.token
+      );
       fs.writeFileSync(dependencies, dependenciesContent);
     }
 
     if (!Array.isArray(dependencies)) {
       const dependenciesFilePath = dependencies.startsWith("http")
-        ? treatUrl(dependencies, urlPlaceHolders)
+        ? treatUrl(dependencies, options.urlPlaceHolders)
         : `${definitionFileFolder}/${dependencies}`;
       const dependenciesFileContent = dependencies.startsWith("http")
-        ? await getUrlContent(dependenciesFilePath)
+        ? await getUrlContent(dependenciesFilePath, options.token)
         : fs.readFileSync(dependenciesFilePath, "utf8");
       const dependenciesYaml = readYaml(dependenciesFileContent);
-      // console.log(`dependenciesFilePath ${dependenciesFilePath}`, dependenciesYaml, urlPlaceHolders)
       validateDependencies(dependenciesYaml);
       // Once the dependencies are loaded, the `extends` proporty is concatenated to the current dependencies
       return (
@@ -6512,7 +6561,7 @@ async function loadDependencies(
             dependenciesFilePath.lastIndexOf("/")
           ),
           dependenciesFinalPath,
-          urlPlaceHolders
+          options
         )
       ).concat(dependenciesYaml.dependencies);
     } else {
@@ -6682,13 +6731,40 @@ module.exports = new Type('tag:yaml.org,2002:null', {
  */
 function treatUrl(url, placeHolders) {
   let result = url;
-  Object.entries(placeHolders).forEach(
-    ([key, value]) => (result = result.replace(`$\{${key}}`, value))
-  );
+  if (placeHolders) {
+    Object.entries(placeHolders).forEach(
+      ([key, value]) => (result = result.replace(`$\{${key}}`, value))
+    );
+  }
   return result;
 }
 
-module.exports = { treatUrl };
+function treatMapping(mapping) {
+  if (mapping) {
+    treatMappingDependencies(mapping.dependencies);
+    treatMappingDependencies(mapping.dependant);
+  }
+}
+
+function treatMappingDependencies(mappingDependencies) {
+  Object.values(mappingDependencies || []).forEach(mappingElement =>
+    mappingElement
+      .filter(mapping => mapping.targetExpression)
+      .forEach(mapping => {
+        try {
+          mapping.target = eval(mapping.targetExpression);
+        } catch (ex) {
+          console.error(
+            `Error evaluating expression \`${mapping.targetExpression}\` for source: \`${mapping.source}\``,
+            ex
+          );
+          mapping.target = undefined;
+        }
+      })
+  );
+}
+
+module.exports = { treatUrl, treatMapping };
 
 
 /***/ }),
@@ -7110,7 +7186,7 @@ module.exports = { generateRepositoryList };
 /***/ 896:
 /***/ (function(module) {
 
-module.exports = {"name":"canvas","description":"Canvas graphics API backed by Cairo","version":"2.6.1","author":"TJ Holowaychuk <tj@learnboost.com>","main":"index.js","browser":"browser.js","contributors":["Nathan Rajlich <nathan@tootallnate.net>","Rod Vagg <r@va.gg>","Juriy Zaytsev <kangax@gmail.com>"],"keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"homepage":"https://github.com/Automattic/node-canvas","repository":"git://github.com/Automattic/node-canvas.git","scripts":{"prebenchmark":"node-gyp build","benchmark":"node benchmarks/run.js","pretest":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js && node-gyp build","test":"mocha test/*.test.js","pretest-server":"node-gyp build","test-server":"node test/server.js","install":"node-pre-gyp install --fallback-to-build","dtslint":"dtslint types"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/node-gfx/node-canvas-prebuilt/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"types":"types/index.d.ts","dependencies":{"nan":"^2.14.0","node-pre-gyp":"^0.11.0","simple-get":"^3.0.3"},"devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^0.5.3","express":"^4.16.3","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1"},"engines":{"node":">=6"},"license":"MIT","_resolved":"https://registry.npmjs.org/canvas/-/canvas-2.6.1.tgz","_integrity":"sha512-S98rKsPcuhfTcYbtF53UIJhcbgIAK533d1kJKMwsMwAIFgfd58MOyxRud3kktlzWiEkFliaJtvyZCBtud/XVEA==","_from":"canvas@2.6.1"};
+module.exports = {"_args":[["canvas@2.6.1","/home/emingora/development/projects/RedHat/issues/BXMSPROD-1363/build-chain-files-generator"]],"_from":"canvas@2.6.1","_id":"canvas@2.6.1","_inBundle":false,"_integrity":"sha512-S98rKsPcuhfTcYbtF53UIJhcbgIAK533d1kJKMwsMwAIFgfd58MOyxRud3kktlzWiEkFliaJtvyZCBtud/XVEA==","_location":"/canvas","_phantomChildren":{},"_requested":{"type":"version","registry":true,"raw":"canvas@2.6.1","name":"canvas","escapedName":"canvas","rawSpec":"2.6.1","saveSpec":null,"fetchSpec":"2.6.1"},"_requiredBy":["/tree-image-drawer"],"_resolved":"https://registry.npmjs.org/canvas/-/canvas-2.6.1.tgz","_spec":"2.6.1","_where":"/home/emingora/development/projects/RedHat/issues/BXMSPROD-1363/build-chain-files-generator","author":{"name":"TJ Holowaychuk","email":"tj@learnboost.com"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/node-gfx/node-canvas-prebuilt/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"browser":"browser.js","bugs":{"url":"https://github.com/Automattic/node-canvas/issues"},"contributors":[{"name":"Nathan Rajlich","email":"nathan@tootallnate.net"},{"name":"Rod Vagg","email":"r@va.gg"},{"name":"Juriy Zaytsev","email":"kangax@gmail.com"}],"dependencies":{"nan":"^2.14.0","node-pre-gyp":"^0.11.0","simple-get":"^3.0.3"},"description":"Canvas graphics API backed by Cairo","devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^0.5.3","express":"^4.16.3","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1"},"engines":{"node":">=6"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"homepage":"https://github.com/Automattic/node-canvas","keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"license":"MIT","main":"index.js","name":"canvas","repository":{"type":"git","url":"git://github.com/Automattic/node-canvas.git"},"scripts":{"benchmark":"node benchmarks/run.js","dtslint":"dtslint types","install":"node-pre-gyp install --fallback-to-build","prebenchmark":"node-gyp build","pretest":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js && node-gyp build","pretest-server":"node-gyp build","test":"mocha test/*.test.js","test-server":"node test/server.js"},"types":"types/index.d.ts","version":"2.6.1"};
 
 /***/ }),
 
