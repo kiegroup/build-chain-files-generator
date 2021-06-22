@@ -7157,9 +7157,9 @@ function isIncluded(node, include) {
     return (
       include.includes(node.project) ||
       (node.mapping !== undefined &&
-        node.mapping.dependencies !== undefined &&
-        node.mapping.dependencies.default !== undefined &&
-        node.mapping.dependencies.default.find(mapping =>
+        node.mapping.dependant !== undefined &&
+        node.mapping.dependant.default !== undefined &&
+        node.mapping.dependant.default.find(mapping =>
           include.includes(`@${mapping.source}:${mapping.target}`)
         ))
     );
@@ -7172,9 +7172,9 @@ function isExcluded(node, exclude) {
     return (
       exclude.includes(node.project) ||
       (node.mapping !== undefined &&
-        node.mapping.dependencies !== undefined &&
-        node.mapping.dependencies.default !== undefined &&
-        node.mapping.dependencies.default.find(mapping =>
+        node.mapping.dependant !== undefined &&
+        node.mapping.dependant.default !== undefined &&
+        node.mapping.dependant.default.find(mapping =>
           exclude.includes(`@${mapping.source}:${mapping.target}`)
         ))
     );
@@ -7190,8 +7190,8 @@ module.exports = { generateRepositoryList };
 /***/ 896:
 /***/ (function(module) {
 
-module.exports = {"name":"canvas","description":"Canvas graphics API backed by Cairo","version":"2.6.1","author":"TJ Holowaychuk <tj@learnboost.com>","main":"index.js","browser":"browser.js","contributors":["Nathan Rajlich <nathan@tootallnate.net>","Rod Vagg <r@va.gg>","Juriy Zaytsev <kangax@gmail.com>"],"keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"homepage":"https://github.com/Automattic/node-canvas","repository":"git://github.com/Automattic/node-canvas.git","scripts":{"prebenchmark":"node-gyp build","benchmark":"node benchmarks/run.js","pretest":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js && node-gyp build","test":"mocha test/*.test.js","pretest-server":"node-gyp build","test-server":"node test/server.js","install":"node-pre-gyp install --fallback-to-build","dtslint":"dtslint types"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/node-gfx/node-canvas-prebuilt/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"types":"types/index.d.ts","dependencies":{"nan":"^2.14.0","node-pre-gyp":"^0.11.0","simple-get":"^3.0.3"},"devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^0.5.3","express":"^4.16.3","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1"},"engines":{"node":">=6"},"license":"MIT","_resolved":"https://registry.npmjs.org/canvas/-/canvas-2.6.1.tgz","_integrity":"sha512-S98rKsPcuhfTcYbtF53UIJhcbgIAK533d1kJKMwsMwAIFgfd58MOyxRud3kktlzWiEkFliaJtvyZCBtud/XVEA==","_from":"canvas@2.6.1"};
 
+module.exports = {"name":"canvas","description":"Canvas graphics API backed by Cairo","version":"2.6.1","author":"TJ Holowaychuk <tj@learnboost.com>","main":"index.js","browser":"browser.js","contributors":["Nathan Rajlich <nathan@tootallnate.net>","Rod Vagg <r@va.gg>","Juriy Zaytsev <kangax@gmail.com>"],"keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"homepage":"https://github.com/Automattic/node-canvas","repository":"git://github.com/Automattic/node-canvas.git","scripts":{"prebenchmark":"node-gyp build","benchmark":"node benchmarks/run.js","pretest":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js && node-gyp build","test":"mocha test/*.test.js","pretest-server":"node-gyp build","test-server":"node test/server.js","install":"node-pre-gyp install --fallback-to-build","dtslint":"dtslint types"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/node-gfx/node-canvas-prebuilt/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"types":"types/index.d.ts","dependencies":{"nan":"^2.14.0","node-pre-gyp":"^0.11.0","simple-get":"^3.0.3"},"devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^0.5.3","express":"^4.16.3","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1"},"engines":{"node":">=6"},"license":"MIT","_resolved":"https://registry.npmjs.org/canvas/-/canvas-2.6.1.tgz","_integrity":"sha512-S98rKsPcuhfTcYbtF53UIJhcbgIAK533d1kJKMwsMwAIFgfd58MOyxRud3kktlzWiEkFliaJtvyZCBtud/XVEA==","_from":"canvas@2.6.1"};
 /***/ }),
 
 /***/ 906:
