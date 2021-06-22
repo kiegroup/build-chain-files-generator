@@ -130,25 +130,25 @@ test("generateRepositoryList exclude project mapping wit coincidenes", async () 
     {
       project: "groupx/projectA",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     },
     {
       project: "groupx/projectB",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "master" }] }
+        dependant: { default: [{ source: "7.x", target: "master" }] }
       }
     },
     {
       project: "groupx/projectC",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "master" }] }
+        dependant: { default: [{ source: "master", target: "master" }] }
       }
     },
     {
       project: "groupx/projectD",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "7.x" }] }
+        dependant: { default: [{ source: "7.x", target: "7.x" }] }
       }
     },
     {
@@ -157,7 +157,7 @@ test("generateRepositoryList exclude project mapping wit coincidenes", async () 
     {
       project: "groupx/projectF",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     }
   ];
@@ -187,25 +187,25 @@ test("generateRepositoryList exclude project list and mapping wit coincidenes", 
     {
       project: "groupx/projectA",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     },
     {
       project: "groupx/projectB",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "master" }] }
+        dependant: { default: [{ source: "7.x", target: "master" }] }
       }
     },
     {
       project: "groupx/projectC",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "master" }] }
+        dependant: { default: [{ source: "master", target: "master" }] }
       }
     },
     {
       project: "groupx/projectD",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "7.x" }] }
+        dependant: { default: [{ source: "7.x", target: "7.x" }] }
       }
     },
     {
@@ -214,7 +214,7 @@ test("generateRepositoryList exclude project list and mapping wit coincidenes", 
     {
       project: "groupx/projectF",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     }
   ];
@@ -306,25 +306,25 @@ test("generateRepositoryList include project mapping wit coincidenes", async () 
     {
       project: "groupx/projectA",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     },
     {
       project: "groupx/projectB",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "master" }] }
+        dependant: { default: [{ source: "7.x", target: "master" }] }
       }
     },
     {
       project: "groupx/projectC",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "master" }] }
+        dependant: { default: [{ source: "master", target: "master" }] }
       }
     },
     {
       project: "groupx/projectD",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "7.x" }] }
+        dependant: { default: [{ source: "7.x", target: "7.x" }] }
       }
     },
     {
@@ -333,7 +333,7 @@ test("generateRepositoryList include project mapping wit coincidenes", async () 
     {
       project: "groupx/projectF",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     }
   ];
@@ -361,25 +361,25 @@ test("generateRepositoryList include project list and mapping wit coincidenes", 
     {
       project: "groupx/projectA",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     },
     {
       project: "groupx/projectB",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "master" }] }
+        dependant: { default: [{ source: "7.x", target: "master" }] }
       }
     },
     {
       project: "groupx/projectC",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "master" }] }
+        dependant: { default: [{ source: "master", target: "master" }] }
       }
     },
     {
       project: "groupx/projectD",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "7.x" }] }
+        dependant: { default: [{ source: "7.x", target: "7.x" }] }
       }
     },
     {
@@ -388,7 +388,7 @@ test("generateRepositoryList include project list and mapping wit coincidenes", 
     {
       project: "groupx/projectF",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     }
   ];
@@ -417,25 +417,25 @@ test("generateRepositoryList include and exclude", async () => {
     {
       project: "groupx/projectA",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     },
     {
       project: "groupx/projectB",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "master" }] }
+        dependant: { default: [{ source: "7.x", target: "master" }] }
       }
     },
     {
       project: "groupx/projectC",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "master" }] }
+        dependant: { default: [{ source: "master", target: "master" }] }
       }
     },
     {
       project: "groupx/projectD",
       mapping: {
-        dependencies: { default: [{ source: "7.x", target: "7.x" }] }
+        dependant: { default: [{ source: "7.x", target: "7.x" }] }
       }
     },
     {
@@ -444,7 +444,7 @@ test("generateRepositoryList include and exclude", async () => {
     {
       project: "groupx/projectF",
       mapping: {
-        dependencies: { default: [{ source: "master", target: "7.x" }] }
+        dependant: { default: [{ source: "master", target: "7.x" }] }
       }
     }
   ];
