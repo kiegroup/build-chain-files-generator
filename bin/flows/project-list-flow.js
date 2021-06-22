@@ -38,9 +38,9 @@ function isIncluded(node, include) {
     return (
       include.includes(node.project) ||
       (node.mapping !== undefined &&
-        node.mapping.dependencies !== undefined &&
-        node.mapping.dependencies.default !== undefined &&
-        node.mapping.dependencies.default.find(mapping =>
+        node.mapping.dependant !== undefined &&
+        node.mapping.dependant.default !== undefined &&
+        node.mapping.dependant.default.find(mapping =>
           include.includes(`@${mapping.source}:${mapping.target}`)
         ))
     );
@@ -53,9 +53,9 @@ function isExcluded(node, exclude) {
     return (
       exclude.includes(node.project) ||
       (node.mapping !== undefined &&
-        node.mapping.dependencies !== undefined &&
-        node.mapping.dependencies.default !== undefined &&
-        node.mapping.dependencies.default.find(mapping =>
+        node.mapping.dependant !== undefined &&
+        node.mapping.dependant.default !== undefined &&
+        node.mapping.dependant.default.find(mapping =>
           exclude.includes(`@${mapping.source}:${mapping.target}`)
         ))
     );
