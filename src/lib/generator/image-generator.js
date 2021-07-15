@@ -12,6 +12,12 @@ async function generate(tree, output, font = "14px Liberation Serif") {
       font: "rgba(0, 0, 0, 255)",
       background: "rgba(255, 255, 255, 255)"
     },
+    arrow: {
+        bottom: false,
+        top: true,
+        open: 3,
+        size: 10
+    },
     font
   };
 
