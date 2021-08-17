@@ -25,4 +25,3 @@ async function generate(tree, output, font = "14px Liberation Serif") {
 }
 
 module.exports = { generate };
-
