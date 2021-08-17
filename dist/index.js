@@ -636,6 +636,54 @@ module.exports.parse = parse
 
 /***/ }),
 
+/***/ 72:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const {PassThrough: PassThroughStream} = __webpack_require__(413);
+const zlib = __webpack_require__(761);
+const mimicResponse = __webpack_require__(177);
+
+const decompressResponse = response => {
+	const contentEncoding = (response.headers['content-encoding'] || '').toLowerCase();
+
+	if (!['gzip', 'deflate', 'br'].includes(contentEncoding)) {
+		return response;
+	}
+
+	const isBrotli = contentEncoding === 'br';
+	if (isBrotli && typeof zlib.createBrotliDecompress !== 'function') {
+		return response;
+	}
+
+	const decompress = isBrotli ? zlib.createBrotliDecompress() : zlib.createUnzip();
+	const stream = new PassThroughStream();
+
+	mimicResponse(response, stream);
+
+	decompress.on('error', error => {
+		// Ignore empty response
+		if (error.code === 'Z_BUF_ERROR') {
+			stream.end();
+			return;
+		}
+
+		stream.emit('error', error);
+	});
+
+	response.pipe(decompress).pipe(stream);
+
+	return stream;
+};
+
+module.exports = decompressResponse;
+// TODO: remove this in the next major version
+module.exports.default = decompressResponse;
+
+
+/***/ }),
+
 /***/ 79:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -825,52 +873,6 @@ module.exports = new Type('tag:yaml.org,2002:timestamp', {
 /***/ (function(module) {
 
 module.exports = require("os");
-
-/***/ }),
-
-/***/ 89:
-/***/ (function(module) {
-
-"use strict";
-
-
-// We define these manually to ensure they're always copied
-// even if they would move up the prototype chain
-// https://nodejs.org/api/http.html#http_class_http_incomingmessage
-const knownProperties = [
-	'aborted',
-	'complete',
-	'destroy',
-	'headers',
-	'httpVersion',
-	'httpVersionMinor',
-	'httpVersionMajor',
-	'method',
-	'rawHeaders',
-	'rawTrailers',
-	'setTimeout',
-	'socket',
-	'statusCode',
-	'statusMessage',
-	'trailers',
-	'url'
-];
-
-module.exports = (fromStream, toStream) => {
-	const fromProperties = new Set(Object.keys(fromStream).concat(knownProperties));
-
-	for (const property of fromProperties) {
-		// Don't overwrite existing properties.
-		if (property in toStream) {
-			continue;
-		}
-
-		toStream[property] = typeof fromStream[property] === 'function' ? fromStream[property].bind(fromStream) : fromStream[property];
-	}
-
-	return toStream;
-};
-
 
 /***/ }),
 
@@ -1109,14 +1111,27 @@ module.exports = {
 "use strict";
 
 // For internal use, subject to change.
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.issueCommand = void 0;
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__webpack_require__(747));
@@ -1267,6 +1282,12 @@ const defaultOptions = {
         font: 'rgba(0, 0, 0, 255)',
         background: 'rgba(0, 0, 0, 0)'
     },
+    arrow: {
+        bottom: false,
+        top: false,
+        open: 3,
+        size: 10
+    },
     font: '30px Impact',
 };
 
@@ -1343,6 +1364,51 @@ const getPositions = (root, getChildren, options) => {
     xOffset += options.delta.width + options.block.width;
 };
 
+
+
+/**
+ *
+ * @param {line x0} x0
+ * @param {line y0} y0
+ * @param {line x1} x1
+ * @param {line y1} y1
+ * @param {how open the arrow is} arrowOpen
+ * @param {how big thr arrow's lines are} arrowLength
+ * @param {arrow at the start of the line} arrowStart
+ * @param {arrow at the end of the line} arrowEnd
+ * @param {the line color} lineColor
+ */
+function drawLineWithArrows(context, x0, y0, x1, y1, arrowOpen, arrowLength, arrowStart, arrowEnd, lineColor) {
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const angle = Math.atan2(dy, dx);
+    const length = Math.sqrt(dx * dx + dy * dy);
+
+    
+    // Line
+    context.strokeStyle = lineColor;
+    context.translate(x0, y0);
+    context.rotate(angle);
+    context.beginPath();
+    context.moveTo(0, 0);
+    context.lineTo(length, 0);
+
+    // Arrows
+    if (arrowEnd) {
+      context.moveTo(arrowLength, -arrowOpen);
+      context.lineTo(0, 0);
+      context.lineTo(arrowLength, arrowOpen);
+    }
+    if (arrowStart) {
+      context.moveTo(length - arrowLength, -arrowOpen);
+      context.lineTo(length, 0);
+      context.lineTo(length - arrowLength, arrowOpen);
+    }
+
+    context.stroke();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+}
+
 /**
  * @template T
  * @param {T} root
@@ -1383,11 +1449,7 @@ const drawNodes = (root, getChildren, getDisplay, context, options) => {
 
             const {position: childPosition} = positions.find (val => val.node === child);
 
-            context.strokeStyle = options.colors.line;
-            context.beginPath ();
-            context.moveTo (position.x + options.block.width / 2, position.y + options.block.height);
-            context.lineTo (childPosition.x + options.block.width / 2, childPosition.y);
-            context.stroke ();
+            drawLineWithArrows(context, position.x + options.block.width / 2, position.y + options.block.height, childPosition.x + options.block.width / 2, childPosition.y, options.arrow && options.arrow.open, options.arrow && options.arrow.size, options.arrow && options.arrow.bottom, options.arrow && options.arrow.top, options.colors.line);
 
             drawNode (child);
         });
@@ -1567,6 +1629,52 @@ module.exports = function (str) {
 
   return (cache[str] = font)
 }
+
+
+/***/ }),
+
+/***/ 177:
+/***/ (function(module) {
+
+"use strict";
+
+
+// We define these manually to ensure they're always copied
+// even if they would move up the prototype chain
+// https://nodejs.org/api/http.html#http_class_http_incomingmessage
+const knownProperties = [
+	'aborted',
+	'complete',
+	'destroy',
+	'headers',
+	'httpVersion',
+	'httpVersionMinor',
+	'httpVersionMajor',
+	'method',
+	'rawHeaders',
+	'rawTrailers',
+	'setTimeout',
+	'socket',
+	'statusCode',
+	'statusMessage',
+	'trailers',
+	'url'
+];
+
+module.exports = (fromStream, toStream) => {
+	const fromProperties = new Set(Object.keys(fromStream).concat(knownProperties));
+
+	for (const property of fromProperties) {
+		// Don't overwrite existing properties.
+		if (property in toStream) {
+			continue;
+		}
+
+		toStream[property] = typeof fromStream[property] === 'function' ? fromStream[property].bind(fromStream) : fromStream[property];
+	}
+
+	return toStream;
+};
 
 
 /***/ }),
@@ -1869,7 +1977,9 @@ module.exports = {
   /** gif_lib version. */
   gifVersion: bindings.gifVersion ? bindings.gifVersion.replace(/[^.\d]/g, '') : undefined,
   /** freetype version. */
-  freetypeVersion: bindings.freetypeVersion
+  freetypeVersion: bindings.freetypeVersion,
+  /** rsvg version. */
+  rsvgVersion: bindings.rsvgVersion
 }
 
 
@@ -1891,6 +2001,12 @@ async function generate(tree, output, font = "14px Liberation Serif") {
       line: "rgba(0, 0, 0, 255)",
       font: "rgba(0, 0, 0, 255)",
       background: "rgba(255, 255, 255, 255)"
+    },
+    arrow: {
+      bottom: false,
+      top: true,
+      open: 3,
+      size: 10
     },
     font
   };
@@ -1979,6 +2095,7 @@ module.exports = new Type('tag:yaml.org,2002:js/undefined', {
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.toCommandValue = void 0;
 /**
  * Sanitizes an input into a string so it can be passed into issueCommand safely
  * @param input input to sanitize into a string
@@ -2148,14 +2265,27 @@ module.exports = new Type('tag:yaml.org,2002:float', {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.issue = exports.issueCommand = void 0;
 const os = __importStar(__webpack_require__(87));
 const utils_1 = __webpack_require__(394);
 /**
@@ -3639,7 +3769,7 @@ function readAlias(state) {
 
   alias = state.input.slice(_position, state.position);
 
-  if (!state.anchorMap.hasOwnProperty(alias)) {
+  if (!_hasOwnProperty.call(state.anchorMap, alias)) {
     throwError(state, 'unidentified alias "' + alias + '"');
   }
 
@@ -4018,6 +4148,25 @@ module.exports.safeLoad    = safeLoad;
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -4027,14 +4176,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-    result["default"] = mod;
-    return result;
-};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getState = exports.saveState = exports.group = exports.endGroup = exports.startGroup = exports.info = exports.warning = exports.error = exports.debug = exports.isDebug = exports.setFailed = exports.setCommandEcho = exports.setOutput = exports.getBooleanInput = exports.getMultilineInput = exports.getInput = exports.addPath = exports.setSecret = exports.exportVariable = exports.ExitCode = void 0;
 const command_1 = __webpack_require__(431);
 const file_command_1 = __webpack_require__(102);
 const utils_1 = __webpack_require__(394);
@@ -4101,7 +4244,9 @@ function addPath(inputPath) {
 }
 exports.addPath = addPath;
 /**
- * Gets the value of an input.  The value is also trimmed.
+ * Gets the value of an input.
+ * Unless trimWhitespace is set to false in InputOptions, the value is also trimmed.
+ * Returns an empty string if the value is not defined.
  *
  * @param     name     name of the input to get
  * @param     options  optional. See InputOptions.
@@ -4112,9 +4257,49 @@ function getInput(name, options) {
     if (options && options.required && !val) {
         throw new Error(`Input required and not supplied: ${name}`);
     }
+    if (options && options.trimWhitespace === false) {
+        return val;
+    }
     return val.trim();
 }
 exports.getInput = getInput;
+/**
+ * Gets the values of an multiline input.  Each value is also trimmed.
+ *
+ * @param     name     name of the input to get
+ * @param     options  optional. See InputOptions.
+ * @returns   string[]
+ *
+ */
+function getMultilineInput(name, options) {
+    const inputs = getInput(name, options)
+        .split('\n')
+        .filter(x => x !== '');
+    return inputs;
+}
+exports.getMultilineInput = getMultilineInput;
+/**
+ * Gets the input value of the boolean type in the YAML 1.2 "core schema" specification.
+ * Support boolean input list: `true | True | TRUE | false | False | FALSE` .
+ * The return value is also in boolean type.
+ * ref: https://yaml.org/spec/1.2/spec.html#id2804923
+ *
+ * @param     name     name of the input to get
+ * @param     options  optional. See InputOptions.
+ * @returns   boolean
+ */
+function getBooleanInput(name, options) {
+    const trueValue = ['true', 'True', 'TRUE'];
+    const falseValue = ['false', 'False', 'FALSE'];
+    const val = getInput(name, options);
+    if (trueValue.includes(val))
+        return true;
+    if (falseValue.includes(val))
+        return false;
+    throw new TypeError(`Input does not meet YAML 1.2 "Core Schema" specification: ${name}\n` +
+        `Support boolean input list: \`true | True | TRUE | false | False | FALSE\``);
+}
+exports.getBooleanInput = getBooleanInput;
 /**
  * Sets the value of an output.
  *
@@ -4123,6 +4308,7 @@ exports.getInput = getInput;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setOutput(name, value) {
+    process.stdout.write(os.EOL);
     command_1.issueCommand('set-output', { name }, value);
 }
 exports.setOutput = setOutput;
@@ -4689,7 +4875,7 @@ DOMMatrix.prototype.skewYSelf = function (sy) {
   return this
 }
 
-DOMMatrix.prototype.flipX = function () { 
+DOMMatrix.prototype.flipX = function () {
   return newInstance(multiply([
     -1, 0, 0, 0,
     0, 1, 0, 0,
@@ -4710,8 +4896,135 @@ DOMMatrix.prototype.inverse = function () {
   return newInstance(this._values).invertSelf()
 }
 DOMMatrix.prototype.invertSelf = function () {
-  // If not invertible, set all attributes to NaN and is2D to false
-  throw new Error('Not implemented')
+  var m = this._values;
+  var inv = m.map(v => 0);
+
+  inv[0] = m[5]  * m[10] * m[15] -
+          m[5]  * m[11] * m[14] -
+          m[9]  * m[6]  * m[15] +
+          m[9]  * m[7]  * m[14] +
+          m[13] * m[6]  * m[11] -
+          m[13] * m[7]  * m[10];
+
+  inv[4] = -m[4]  * m[10] * m[15] +
+          m[4]  * m[11] * m[14] +
+          m[8]  * m[6]  * m[15] -
+          m[8]  * m[7]  * m[14] -
+          m[12] * m[6]  * m[11] +
+          m[12] * m[7]  * m[10];
+
+  inv[8] = m[4]  * m[9] * m[15] -
+          m[4]  * m[11] * m[13] -
+          m[8]  * m[5] * m[15] +
+          m[8]  * m[7] * m[13] +
+          m[12] * m[5] * m[11] -
+          m[12] * m[7] * m[9];
+
+  inv[12] = -m[4]  * m[9] * m[14] +
+          m[4]  * m[10] * m[13] +
+          m[8]  * m[5] * m[14] -
+          m[8]  * m[6] * m[13] -
+          m[12] * m[5] * m[10] +
+          m[12] * m[6] * m[9];
+
+  // If the determinant is zero, this matrix cannot be inverted, and all
+  // values should be set to NaN, with the is2D flag set to false.
+
+  var det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+  if (det === 0) {
+    this._values = m.map(v => NaN);
+    this._is2D = false;
+    return this;
+  }
+
+  inv[1] = -m[1]  * m[10] * m[15] +
+          m[1]  * m[11] * m[14] +
+          m[9]  * m[2] * m[15] -
+          m[9]  * m[3] * m[14] -
+          m[13] * m[2] * m[11] +
+          m[13] * m[3] * m[10];
+
+  inv[5] = m[0]  * m[10] * m[15] -
+          m[0]  * m[11] * m[14] -
+          m[8]  * m[2] * m[15] +
+          m[8]  * m[3] * m[14] +
+          m[12] * m[2] * m[11] -
+          m[12] * m[3] * m[10];
+
+  inv[9] = -m[0]  * m[9] * m[15] +
+          m[0]  * m[11] * m[13] +
+          m[8]  * m[1] * m[15] -
+          m[8]  * m[3] * m[13] -
+          m[12] * m[1] * m[11] +
+          m[12] * m[3] * m[9];
+
+  inv[13] = m[0]  * m[9] * m[14] -
+          m[0]  * m[10] * m[13] -
+          m[8]  * m[1] * m[14] +
+          m[8]  * m[2] * m[13] +
+          m[12] * m[1] * m[10] -
+          m[12] * m[2] * m[9];
+
+  inv[2] = m[1]  * m[6] * m[15] -
+          m[1]  * m[7] * m[14] -
+          m[5]  * m[2] * m[15] +
+          m[5]  * m[3] * m[14] +
+          m[13] * m[2] * m[7] -
+          m[13] * m[3] * m[6];
+
+  inv[6] = -m[0]  * m[6] * m[15] +
+          m[0]  * m[7] * m[14] +
+          m[4]  * m[2] * m[15] -
+          m[4]  * m[3] * m[14] -
+          m[12] * m[2] * m[7] +
+          m[12] * m[3] * m[6];
+
+  inv[10] = m[0]  * m[5] * m[15] -
+          m[0]  * m[7] * m[13] -
+          m[4]  * m[1] * m[15] +
+          m[4]  * m[3] * m[13] +
+          m[12] * m[1] * m[7] -
+          m[12] * m[3] * m[5];
+
+  inv[14] = -m[0]  * m[5] * m[14] +
+          m[0]  * m[6] * m[13] +
+          m[4]  * m[1] * m[14] -
+          m[4]  * m[2] * m[13] -
+          m[12] * m[1] * m[6] +
+          m[12] * m[2] * m[5];
+
+  inv[3] = -m[1] * m[6] * m[11] +
+          m[1] * m[7] * m[10] +
+          m[5] * m[2] * m[11] -
+          m[5] * m[3] * m[10] -
+          m[9] * m[2] * m[7] +
+          m[9] * m[3] * m[6];
+
+  inv[7] = m[0] * m[6] * m[11] -
+          m[0] * m[7] * m[10] -
+          m[4] * m[2] * m[11] +
+          m[4] * m[3] * m[10] +
+          m[8] * m[2] * m[7] -
+          m[8] * m[3] * m[6];
+
+  inv[11] = -m[0] * m[5] * m[11] +
+          m[0] * m[7] * m[9] +
+          m[4] * m[1] * m[11] -
+          m[4] * m[3] * m[9] -
+          m[8] * m[1] * m[7] +
+          m[8] * m[3] * m[5];
+
+  inv[15] = m[0] * m[5] * m[10] -
+          m[0] * m[6] * m[9] -
+          m[4] * m[1] * m[10] +
+          m[4] * m[2] * m[9] +
+          m[8] * m[1] * m[6] -
+          m[8] * m[2] * m[5];
+
+  inv.forEach((v,i) => inv[i] = v/det);
+  this._values = inv;
+  return this
 }
 
 DOMMatrix.prototype.setMatrixValue = function (transformList) {
@@ -4735,11 +5048,11 @@ DOMMatrix.prototype.transformPoint = function (point) {
   return new DOMPoint(nx, ny, nz, nw)
 }
 
-DOMMatrix.prototype.toFloat32Array = function () { 
+DOMMatrix.prototype.toFloat32Array = function () {
   return Float32Array.from(this._values)
 }
 
-DOMMatrix.prototype.toFloat64Array = function () { 
+DOMMatrix.prototype.toFloat64Array = function () {
   return this._values.slice(0)
 }
 
@@ -6158,7 +6471,7 @@ module.exports = new Schema({
 module.exports = simpleGet
 
 const concat = __webpack_require__(80)
-const decompressResponse = __webpack_require__(861) // excluded from browser build
+const decompressResponse = __webpack_require__(72) // excluded from browser build
 const http = __webpack_require__(605)
 const https = __webpack_require__(211)
 const once = __webpack_require__(49)
@@ -7066,54 +7379,6 @@ Canvas.prototype.toDataURL = function(a1, a2, a3){
 
 /***/ }),
 
-/***/ 861:
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-const {PassThrough: PassThroughStream} = __webpack_require__(413);
-const zlib = __webpack_require__(761);
-const mimicResponse = __webpack_require__(89);
-
-const decompressResponse = response => {
-	const contentEncoding = (response.headers['content-encoding'] || '').toLowerCase();
-
-	if (!['gzip', 'deflate', 'br'].includes(contentEncoding)) {
-		return response;
-	}
-
-	const isBrotli = contentEncoding === 'br';
-	if (isBrotli && typeof zlib.createBrotliDecompress !== 'function') {
-		return response;
-	}
-
-	const decompress = isBrotli ? zlib.createBrotliDecompress() : zlib.createUnzip();
-	const stream = new PassThroughStream();
-
-	mimicResponse(response, stream);
-
-	decompress.on('error', error => {
-		// Ignore empty response
-		if (error.code === 'Z_BUF_ERROR') {
-			stream.end();
-			return;
-		}
-
-		stream.emit('error', error);
-	});
-
-	response.pipe(decompress).pipe(stream);
-
-	return stream;
-};
-
-module.exports = decompressResponse;
-// TODO: remove this in the next major version
-module.exports.default = decompressResponse;
-
-
-/***/ }),
-
 /***/ 883:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -7190,8 +7455,8 @@ module.exports = { generateRepositoryList };
 /***/ 896:
 /***/ (function(module) {
 
+module.exports = {"name":"canvas","description":"Canvas graphics API backed by Cairo","version":"2.8.0","author":"TJ Holowaychuk <tj@learnboost.com>","main":"index.js","browser":"browser.js","contributors":["Nathan Rajlich <nathan@tootallnate.net>","Rod Vagg <r@va.gg>","Juriy Zaytsev <kangax@gmail.com>"],"keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"homepage":"https://github.com/Automattic/node-canvas","repository":"git://github.com/Automattic/node-canvas.git","scripts":{"prebenchmark":"node-gyp build","benchmark":"node benchmarks/run.js","lint":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js","test":"mocha test/*.test.js","pretest-server":"node-gyp build","test-server":"node test/server.js","install":"node-pre-gyp install --fallback-to-build","dtslint":"dtslint types"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/Automattic/node-canvas/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"types":"types/index.d.ts","dependencies":{"nan":"^2.14.0","@mapbox/node-pre-gyp":"^1.0.0","simple-get":"^3.0.3"},"devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^4.0.7","express":"^4.16.3","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1","typescript":"^4.2.2"},"engines":{"node":">=6"},"license":"MIT"};
 
-module.exports = {"name":"canvas","description":"Canvas graphics API backed by Cairo","version":"2.6.1","author":"TJ Holowaychuk <tj@learnboost.com>","main":"index.js","browser":"browser.js","contributors":["Nathan Rajlich <nathan@tootallnate.net>","Rod Vagg <r@va.gg>","Juriy Zaytsev <kangax@gmail.com>"],"keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"homepage":"https://github.com/Automattic/node-canvas","repository":"git://github.com/Automattic/node-canvas.git","scripts":{"prebenchmark":"node-gyp build","benchmark":"node benchmarks/run.js","pretest":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js && node-gyp build","test":"mocha test/*.test.js","pretest-server":"node-gyp build","test-server":"node test/server.js","install":"node-pre-gyp install --fallback-to-build","dtslint":"dtslint types"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/node-gfx/node-canvas-prebuilt/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"types":"types/index.d.ts","dependencies":{"nan":"^2.14.0","node-pre-gyp":"^0.11.0","simple-get":"^3.0.3"},"devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^0.5.3","express":"^4.16.3","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1"},"engines":{"node":">=6"},"license":"MIT","_resolved":"https://registry.npmjs.org/canvas/-/canvas-2.6.1.tgz","_integrity":"sha512-S98rKsPcuhfTcYbtF53UIJhcbgIAK533d1kJKMwsMwAIFgfd58MOyxRud3kktlzWiEkFliaJtvyZCBtud/XVEA==","_from":"canvas@2.6.1"};
 /***/ }),
 
 /***/ 906:
