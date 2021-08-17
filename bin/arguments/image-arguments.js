@@ -5,8 +5,7 @@ function getArguments(subParser) {
   buildParser.add_argument("-font", {
     nargs: 1,
     required: false,
-    help:
-      "The font size and type to use from image generation tool. Something like '14px Arial'. The font should be available and installed in the system."
+    help: "The font size and type to use from image generation tool. Something like '14px Arial'. The font should be available and installed in the system."
   });
 }
 
