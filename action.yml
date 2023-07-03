@@ -23,7 +23,7 @@ inputs:
     description: "The list of projects or branches to include"
     required: false
 runs:
-  using: "node12"
+  using: "node16"
   main: "dist/index.js"
 branding:
   icon: "box"
