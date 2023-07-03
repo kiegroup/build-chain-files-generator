@@ -95,3 +95,35 @@ where:
 - `image`: the file type to generate
 - `-exclude` (optional): the project list or mapping to exclude
 - `-include` (optional): the project list or mapping to include
+
+## Development
+
+Due to `librsvg-2.so.2` is included as a part of the new canvas library and the `librsvg-2.so.2` is exceeding 100MB, the file has to be externalized on `git-lfs` service.
+
+In case `lfs` files are updated please execute `git lfs push origin $BRANCH`
+
+### Github Actions Limitations
+Github Actions does not download LFS files from `uses` step [but from `actions/checkout` with `lfs` input enabled](https://github.com/actions/checkout). So steps like
+```
+  - name: Image Generation
+    uses: kiegroup/build-chain-files-generator@main
+    with:
+      definition-file: .ci/pull-request-config.yaml
+      file-type: image
+      output-file-path: ./docs/project-dependencies-hierarchy.png
+```
+are not working for now, instead
+
+```
+  - name: Checkout BC Files Generator repo
+    uses: actions/checkout@v3
+    with:
+      repository: kiegroup/build-chain-files-generator
+      path: build-chain-files-generator
+      lfs: true
+  - name: Build BC Files Generator
+    run: npm install --prefix build-chain-files-generator
+  - name: Image Generation
+    run: ./build-chain-files-generator/bin/generator-cli.js -df .ci/pull-request-config.yaml -o ./docs/project-dependencies-hierarchy.png image
+```
+
