@@ -137,6 +137,65 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 16:
+/***/ (function(module) {
+
+module.exports = require("tls");
+
+/***/ }),
+
+/***/ 22:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _validate = _interopRequireDefault(__webpack_require__(78));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function parse(uuid) {
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Invalid UUID');
+  }
+
+  let v;
+  const arr = new Uint8Array(16); // Parse ########-....-....-....-............
+
+  arr[0] = (v = parseInt(uuid.slice(0, 8), 16)) >>> 24;
+  arr[1] = v >>> 16 & 0xff;
+  arr[2] = v >>> 8 & 0xff;
+  arr[3] = v & 0xff; // Parse ........-####-....-....-............
+
+  arr[4] = (v = parseInt(uuid.slice(9, 13), 16)) >>> 8;
+  arr[5] = v & 0xff; // Parse ........-....-####-....-............
+
+  arr[6] = (v = parseInt(uuid.slice(14, 18), 16)) >>> 8;
+  arr[7] = v & 0xff; // Parse ........-....-....-####-............
+
+  arr[8] = (v = parseInt(uuid.slice(19, 23), 16)) >>> 8;
+  arr[9] = v & 0xff; // Parse ........-....-....-....-############
+  // (Use "/" to avoid 32-bit truncation when bit-shifting high-order bytes)
+
+  arr[10] = (v = parseInt(uuid.slice(24, 36), 16)) / 0x10000000000 & 0xff;
+  arr[11] = v / 0x100000000 & 0xff;
+  arr[12] = v >>> 24 & 0xff;
+  arr[13] = v >>> 16 & 0xff;
+  arr[14] = v >>> 8 & 0xff;
+  arr[15] = v & 0xff;
+  return arr;
+}
+
+var _default = parse;
+exports.default = _default;
+
+/***/ }),
+
 /***/ 23:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -516,6 +575,92 @@ function onceStrict (fn) {
 
 /***/ }),
 
+/***/ 62:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+Object.defineProperty(exports, "v1", {
+  enumerable: true,
+  get: function () {
+    return _v.default;
+  }
+});
+Object.defineProperty(exports, "v3", {
+  enumerable: true,
+  get: function () {
+    return _v2.default;
+  }
+});
+Object.defineProperty(exports, "v4", {
+  enumerable: true,
+  get: function () {
+    return _v3.default;
+  }
+});
+Object.defineProperty(exports, "v5", {
+  enumerable: true,
+  get: function () {
+    return _v4.default;
+  }
+});
+Object.defineProperty(exports, "NIL", {
+  enumerable: true,
+  get: function () {
+    return _nil.default;
+  }
+});
+Object.defineProperty(exports, "version", {
+  enumerable: true,
+  get: function () {
+    return _version.default;
+  }
+});
+Object.defineProperty(exports, "validate", {
+  enumerable: true,
+  get: function () {
+    return _validate.default;
+  }
+});
+Object.defineProperty(exports, "stringify", {
+  enumerable: true,
+  get: function () {
+    return _stringify.default;
+  }
+});
+Object.defineProperty(exports, "parse", {
+  enumerable: true,
+  get: function () {
+    return _parse.default;
+  }
+});
+
+var _v = _interopRequireDefault(__webpack_require__(893));
+
+var _v2 = _interopRequireDefault(__webpack_require__(209));
+
+var _v3 = _interopRequireDefault(__webpack_require__(733));
+
+var _v4 = _interopRequireDefault(__webpack_require__(384));
+
+var _nil = _interopRequireDefault(__webpack_require__(327));
+
+var _version = _interopRequireDefault(__webpack_require__(695));
+
+var _validate = _interopRequireDefault(__webpack_require__(78));
+
+var _stringify = _interopRequireDefault(__webpack_require__(411));
+
+var _parse = _interopRequireDefault(__webpack_require__(22));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/***/ }),
+
 /***/ 63:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -636,51 +781,27 @@ module.exports.parse = parse
 
 /***/ }),
 
-/***/ 72:
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ 78:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-const {PassThrough: PassThroughStream} = __webpack_require__(413);
-const zlib = __webpack_require__(761);
-const mimicResponse = __webpack_require__(177);
 
-const decompressResponse = response => {
-	const contentEncoding = (response.headers['content-encoding'] || '').toLowerCase();
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
 
-	if (!['gzip', 'deflate', 'br'].includes(contentEncoding)) {
-		return response;
-	}
+var _regex = _interopRequireDefault(__webpack_require__(456));
 
-	const isBrotli = contentEncoding === 'br';
-	if (isBrotli && typeof zlib.createBrotliDecompress !== 'function') {
-		return response;
-	}
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	const decompress = isBrotli ? zlib.createBrotliDecompress() : zlib.createUnzip();
-	const stream = new PassThroughStream();
+function validate(uuid) {
+  return typeof uuid === 'string' && _regex.default.test(uuid);
+}
 
-	mimicResponse(response, stream);
-
-	decompress.on('error', error => {
-		// Ignore empty response
-		if (error.code === 'Z_BUF_ERROR') {
-			stream.end();
-			return;
-		}
-
-		stream.emit('error', error);
-	});
-
-	response.pipe(decompress).pipe(stream);
-
-	return stream;
-};
-
-module.exports = decompressResponse;
-// TODO: remove this in the next major version
-module.exports.default = decompressResponse;
-
+var _default = validate;
+exports.default = _default;
 
 /***/ }),
 
@@ -873,6 +994,52 @@ module.exports = new Type('tag:yaml.org,2002:timestamp', {
 /***/ (function(module) {
 
 module.exports = require("os");
+
+/***/ }),
+
+/***/ 89:
+/***/ (function(module) {
+
+"use strict";
+
+
+// We define these manually to ensure they're always copied
+// even if they would move up the prototype chain
+// https://nodejs.org/api/http.html#http_class_http_incomingmessage
+const knownProperties = [
+	'aborted',
+	'complete',
+	'destroy',
+	'headers',
+	'httpVersion',
+	'httpVersionMinor',
+	'httpVersionMajor',
+	'method',
+	'rawHeaders',
+	'rawTrailers',
+	'setTimeout',
+	'socket',
+	'statusCode',
+	'statusMessage',
+	'trailers',
+	'url'
+];
+
+module.exports = (fromStream, toStream) => {
+	const fromProperties = new Set(Object.keys(fromStream).concat(knownProperties));
+
+	for (const property of fromProperties) {
+		// Don't overwrite existing properties.
+		if (property in toStream) {
+			continue;
+		}
+
+		toStream[property] = typeof fromStream[property] === 'function' ? fromStream[property].bind(fromStream) : fromStream[property];
+	}
+
+	return toStream;
+};
+
 
 /***/ }),
 
@@ -1131,13 +1298,14 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.issueCommand = void 0;
+exports.prepareKeyValueMessage = exports.issueFileCommand = void 0;
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__webpack_require__(747));
 const os = __importStar(__webpack_require__(87));
+const uuid_1 = __webpack_require__(62);
 const utils_1 = __webpack_require__(394);
-function issueCommand(command, message) {
+function issueFileCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
         throw new Error(`Unable to find environment variable for file command ${command}`);
@@ -1149,7 +1317,22 @@ function issueCommand(command, message) {
         encoding: 'utf8'
     });
 }
-exports.issueCommand = issueCommand;
+exports.issueFileCommand = issueFileCommand;
+function prepareKeyValueMessage(key, value) {
+    const delimiter = `ghadelimiter_${uuid_1.v4()}`;
+    const convertedValue = utils_1.toCommandValue(value);
+    // These should realistically never happen, but just in case someone finds a
+    // way to exploit uuid generation let's not allow keys or values that contain
+    // the delimiter.
+    if (key.includes(delimiter)) {
+        throw new Error(`Unexpected input: name should not contain the delimiter "${delimiter}"`);
+    }
+    if (convertedValue.includes(delimiter)) {
+        throw new Error(`Unexpected input: value should not contain the delimiter "${delimiter}"`);
+    }
+    return `${key}<<${delimiter}${os.EOL}${convertedValue}${os.EOL}${delimiter}`;
+}
+exports.prepareKeyValueMessage = prepareKeyValueMessage;
 //# sourceMappingURL=file-command.js.map
 
 /***/ }),
@@ -1194,7 +1377,7 @@ module.exports = { generateImage };
 
 const assert = __webpack_require__(357);
 
-const allowedVersions = ["2.1"];
+const allowedVersions = ["2.1", "2.2"];
 
 function validateDefinition(definition) {
   assert(
@@ -1534,22 +1717,21 @@ module.exports = { ReadYamlException };
  */
 
 const weights = 'bold|bolder|lighter|[1-9]00'
-  , styles = 'italic|oblique'
-  , variants = 'small-caps'
-  , stretches = 'ultra-condensed|extra-condensed|condensed|semi-condensed|semi-expanded|expanded|extra-expanded|ultra-expanded'
-  , units = 'px|pt|pc|in|cm|mm|%|em|ex|ch|rem|q'
-  , string = '\'([^\']+)\'|"([^"]+)"|[\\w\\s-]+'
+const styles = 'italic|oblique'
+const variants = 'small-caps'
+const stretches = 'ultra-condensed|extra-condensed|condensed|semi-condensed|semi-expanded|expanded|extra-expanded|ultra-expanded'
+const units = 'px|pt|pc|in|cm|mm|%|em|ex|ch|rem|q'
+const string = '\'([^\']+)\'|"([^"]+)"|[\\w\\s-]+'
 
 // [ [ <‘font-style’> || <font-variant-css21> || <‘font-weight’> || <‘font-stretch’> ]?
 //    <‘font-size’> [ / <‘line-height’> ]? <‘font-family’> ]
 // https://drafts.csswg.org/css-fonts-3/#font-prop
-const weightRe = new RegExp('(' + weights + ') +', 'i')
-const styleRe = new RegExp('(' + styles + ') +', 'i')
-const variantRe = new RegExp('(' + variants + ') +', 'i')
-const stretchRe = new RegExp('(' + stretches + ') +', 'i')
+const weightRe = new RegExp(`(${weights}) +`, 'i')
+const styleRe = new RegExp(`(${styles}) +`, 'i')
+const variantRe = new RegExp(`(${variants}) +`, 'i')
+const stretchRe = new RegExp(`(${stretches}) +`, 'i')
 const sizeFamilyRe = new RegExp(
-  '([\\d\\.]+)(' + units + ') *'
-  + '((?:' + string + ')( *, *(?:' + string + '))*)')
+  `([\\d\\.]+)(${units}) *((?:${string})( *, *(?:${string}))*)`)
 
 /**
  * Cache font parsing.
@@ -1568,7 +1750,7 @@ const defaultHeight = 16 // pt, common browser default
  * @api private
  */
 
-module.exports = function (str) {
+module.exports = str => {
   // Cached
   if (cache[str]) return cache[str]
 
@@ -1590,7 +1772,7 @@ module.exports = function (str) {
   // Optional, unordered properties.
   let weight, style, variant, stretch
   // Stop search at `sizeFamily.index`
-  let substr = str.substring(0, sizeFamily.index)
+  const substr = str.substring(0, sizeFamily.index)
   if ((weight = weightRe.exec(substr))) font.weight = weight[1]
   if ((style = styleRe.exec(substr))) font.style = style[1]
   if ((variant = variantRe.exec(substr))) font.variant = variant[1]
@@ -1634,48 +1816,85 @@ module.exports = function (str) {
 /***/ }),
 
 /***/ 177:
-/***/ (function(module) {
+/***/ (function(__unusedmodule, exports) {
 
 "use strict";
 
-
-// We define these manually to ensure they're always copied
-// even if they would move up the prototype chain
-// https://nodejs.org/api/http.html#http_class_http_incomingmessage
-const knownProperties = [
-	'aborted',
-	'complete',
-	'destroy',
-	'headers',
-	'httpVersion',
-	'httpVersionMinor',
-	'httpVersionMajor',
-	'method',
-	'rawHeaders',
-	'rawTrailers',
-	'setTimeout',
-	'socket',
-	'statusCode',
-	'statusMessage',
-	'trailers',
-	'url'
-];
-
-module.exports = (fromStream, toStream) => {
-	const fromProperties = new Set(Object.keys(fromStream).concat(knownProperties));
-
-	for (const property of fromProperties) {
-		// Don't overwrite existing properties.
-		if (property in toStream) {
-			continue;
-		}
-
-		toStream[property] = typeof fromStream[property] === 'function' ? fromStream[property].bind(fromStream) : fromStream[property];
-	}
-
-	return toStream;
-};
-
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.checkBypass = exports.getProxyUrl = void 0;
+function getProxyUrl(reqUrl) {
+    const usingSsl = reqUrl.protocol === 'https:';
+    if (checkBypass(reqUrl)) {
+        return undefined;
+    }
+    const proxyVar = (() => {
+        if (usingSsl) {
+            return process.env['https_proxy'] || process.env['HTTPS_PROXY'];
+        }
+        else {
+            return process.env['http_proxy'] || process.env['HTTP_PROXY'];
+        }
+    })();
+    if (proxyVar) {
+        return new URL(proxyVar);
+    }
+    else {
+        return undefined;
+    }
+}
+exports.getProxyUrl = getProxyUrl;
+function checkBypass(reqUrl) {
+    if (!reqUrl.hostname) {
+        return false;
+    }
+    const reqHost = reqUrl.hostname;
+    if (isLoopbackAddress(reqHost)) {
+        return true;
+    }
+    const noProxy = process.env['no_proxy'] || process.env['NO_PROXY'] || '';
+    if (!noProxy) {
+        return false;
+    }
+    // Determine the request port
+    let reqPort;
+    if (reqUrl.port) {
+        reqPort = Number(reqUrl.port);
+    }
+    else if (reqUrl.protocol === 'http:') {
+        reqPort = 80;
+    }
+    else if (reqUrl.protocol === 'https:') {
+        reqPort = 443;
+    }
+    // Format the request hostname and hostname with port
+    const upperReqHosts = [reqUrl.hostname.toUpperCase()];
+    if (typeof reqPort === 'number') {
+        upperReqHosts.push(`${upperReqHosts[0]}:${reqPort}`);
+    }
+    // Compare request host against noproxy
+    for (const upperNoProxyItem of noProxy
+        .split(',')
+        .map(x => x.trim().toUpperCase())
+        .filter(x => x)) {
+        if (upperNoProxyItem === '*' ||
+            upperReqHosts.some(x => x === upperNoProxyItem ||
+                x.endsWith(`.${upperNoProxyItem}`) ||
+                (upperNoProxyItem.startsWith('.') &&
+                    x.endsWith(`${upperNoProxyItem}`)))) {
+            return true;
+        }
+    }
+    return false;
+}
+exports.checkBypass = checkBypass;
+function isLoopbackAddress(host) {
+    const hostLower = host.toLowerCase();
+    return (hostLower === 'localhost' ||
+        hostLower.startsWith('127.') ||
+        hostLower.startsWith('[::1]') ||
+        hostLower.startsWith('[0:0:0:0:0:0:0:1]'));
+}
+//# sourceMappingURL=proxy.js.map
 
 /***/ }),
 
@@ -1686,10 +1905,118 @@ module.exports = require("querystring");
 
 /***/ }),
 
+/***/ 209:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _v = _interopRequireDefault(__webpack_require__(212));
+
+var _md = _interopRequireDefault(__webpack_require__(803));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const v3 = (0, _v.default)('v3', 0x30, _md.default);
+var _default = v3;
+exports.default = _default;
+
+/***/ }),
+
 /***/ 211:
 /***/ (function(module) {
 
 module.exports = require("https");
+
+/***/ }),
+
+/***/ 212:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = _default;
+exports.URL = exports.DNS = void 0;
+
+var _stringify = _interopRequireDefault(__webpack_require__(411));
+
+var _parse = _interopRequireDefault(__webpack_require__(22));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function stringToBytes(str) {
+  str = unescape(encodeURIComponent(str)); // UTF8 escape
+
+  const bytes = [];
+
+  for (let i = 0; i < str.length; ++i) {
+    bytes.push(str.charCodeAt(i));
+  }
+
+  return bytes;
+}
+
+const DNS = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
+exports.DNS = DNS;
+const URL = '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
+exports.URL = URL;
+
+function _default(name, version, hashfunc) {
+  function generateUUID(value, namespace, buf, offset) {
+    if (typeof value === 'string') {
+      value = stringToBytes(value);
+    }
+
+    if (typeof namespace === 'string') {
+      namespace = (0, _parse.default)(namespace);
+    }
+
+    if (namespace.length !== 16) {
+      throw TypeError('Namespace must be array-like (16 iterable integer values, 0-255)');
+    } // Compute hash of namespace and value, Per 4.3
+    // Future: Use spread syntax when supported on all platforms, e.g. `bytes =
+    // hashfunc([...namespace, ... value])`
+
+
+    let bytes = new Uint8Array(16 + value.length);
+    bytes.set(namespace);
+    bytes.set(value, namespace.length);
+    bytes = hashfunc(bytes);
+    bytes[6] = bytes[6] & 0x0f | version;
+    bytes[8] = bytes[8] & 0x3f | 0x80;
+
+    if (buf) {
+      offset = offset || 0;
+
+      for (let i = 0; i < 16; ++i) {
+        buf[offset + i] = bytes[i];
+      }
+
+      return buf;
+    }
+
+    return (0, _stringify.default)(bytes);
+  } // Function#name is not settable on some platforms (#270)
+
+
+  try {
+    generateUUID.name = name; // eslint-disable-next-line no-empty
+  } catch (err) {} // For CommonJS default export support
+
+
+  generateUUID.DNS = DNS;
+  generateUUID.URL = URL;
+  return generateUUID;
+}
 
 /***/ }),
 
@@ -1748,44 +2075,55 @@ module.exports = new Type('tag:yaml.org,2002:bool', {
  * MIT Licensed
  */
 
-var Readable = __webpack_require__(413).Readable;
-var util = __webpack_require__(669);
+const { Readable } = __webpack_require__(413)
+function noop () {}
 
-var JPEGStream = module.exports = function JPEGStream(canvas, options) {
-  if (!(this instanceof JPEGStream)) {
-    throw new TypeError("Class constructors cannot be invoked without 'new'");
-  }
+class JPEGStream extends Readable {
+  constructor (canvas, options) {
+    super()
 
-  if (canvas.streamJPEGSync === undefined) {
-    throw new Error("node-canvas was built without JPEG support.");
-  }
-
-  Readable.call(this);
-
-  this.options = options;
-  this.canvas = canvas;
-};
-
-util.inherits(JPEGStream, Readable);
-
-function noop() {}
-
-JPEGStream.prototype._read = function _read() {
-  // For now we're not controlling the c++ code's data emission, so we only
-  // call canvas.streamJPEGSync once and let it emit data at will.
-  this._read = noop;
-  var self = this;
-  self.canvas.streamJPEGSync(this.options, function(err, chunk){
-    if (err) {
-      self.emit('error', err);
-    } else if (chunk) {
-      self.push(chunk);
-    } else {
-      self.push(null);
+    if (canvas.streamJPEGSync === undefined) {
+      throw new Error('node-canvas was built without JPEG support.')
     }
-  });
+
+    this.options = options
+    this.canvas = canvas
+  }
+
+  _read () {
+    // For now we're not controlling the c++ code's data emission, so we only
+    // call canvas.streamJPEGSync once and let it emit data at will.
+    this._read = noop
+
+    this.canvas.streamJPEGSync(this.options, (err, chunk) => {
+      if (err) {
+        this.emit('error', err)
+      } else if (chunk) {
+        this.push(chunk)
+      } else {
+        this.push(null)
+      }
+    })
+  }
 };
 
+module.exports = JPEGStream
+
+
+/***/ }),
+
+/***/ 327:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _default = '00000000-0000-0000-0000-000000000000';
+exports.default = _default;
 
 /***/ }),
 
@@ -1893,11 +2231,12 @@ module.exports = {
 /***/ }),
 
 /***/ 333:
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 const Canvas = __webpack_require__(844)
 const Image = __webpack_require__(804)
 const CanvasRenderingContext2D = __webpack_require__(745)
+const CanvasPattern = __webpack_require__(742)
 const parseFont = __webpack_require__(169)
 const packageJson = __webpack_require__(896)
 const bindings = __webpack_require__(495)
@@ -1905,8 +2244,7 @@ const fs = __webpack_require__(747)
 const PNGStream = __webpack_require__(953)
 const PDFStream = __webpack_require__(515)
 const JPEGStream = __webpack_require__(303)
-const DOMMatrix = __webpack_require__(476).DOMMatrix
-const DOMPoint = __webpack_require__(476).DOMPoint
+const { DOMPoint, DOMMatrix } = __webpack_require__(476)
 
 function createCanvas (width, height, type) {
   return new Canvas(width, height, type)
@@ -1945,42 +2283,50 @@ function registerFont (src, fontFace) {
   return Canvas._registerFont(fs.realpathSync(src), fontFace)
 }
 
-module.exports = {
-  Canvas,
-  Context2d: CanvasRenderingContext2D, // Legacy/compat export
-  CanvasRenderingContext2D,
-  CanvasGradient: bindings.CanvasGradient,
-  CanvasPattern: bindings.CanvasPattern,
-  Image,
-  ImageData: bindings.ImageData,
-  PNGStream,
-  PDFStream,
-  JPEGStream,
-  DOMMatrix,
-  DOMPoint,
-
-  registerFont,
-  parseFont,
-
-  createCanvas,
-  createImageData,
-  loadImage,
-
-  backends: bindings.Backends,
-
-  /** Library version. */
-  version: packageJson.version,
-  /** Cairo version. */
-  cairoVersion: bindings.cairoVersion,
-  /** jpeglib version. */
-  jpegVersion: bindings.jpegVersion,
-  /** gif_lib version. */
-  gifVersion: bindings.gifVersion ? bindings.gifVersion.replace(/[^.\d]/g, '') : undefined,
-  /** freetype version. */
-  freetypeVersion: bindings.freetypeVersion,
-  /** rsvg version. */
-  rsvgVersion: bindings.rsvgVersion
+/**
+ * Unload all fonts from pango to free up memory
+ */
+function deregisterAllFonts () {
+  return Canvas._deregisterAllFonts()
 }
+
+exports.Canvas = Canvas
+exports.Context2d = CanvasRenderingContext2D // Legacy/compat export
+exports.CanvasRenderingContext2D = CanvasRenderingContext2D
+exports.CanvasGradient = bindings.CanvasGradient
+exports.CanvasPattern = CanvasPattern
+exports.Image = Image
+exports.ImageData = bindings.ImageData
+exports.PNGStream = PNGStream
+exports.PDFStream = PDFStream
+exports.JPEGStream = JPEGStream
+exports.DOMMatrix = DOMMatrix
+exports.DOMPoint = DOMPoint
+
+exports.registerFont = registerFont
+exports.deregisterAllFonts = deregisterAllFonts
+exports.parseFont = parseFont
+
+exports.createCanvas = createCanvas
+exports.createImageData = createImageData
+exports.loadImage = loadImage
+
+exports.backends = bindings.Backends
+
+/** Library version. */
+exports.version = packageJson.version
+/** Cairo version. */
+exports.cairoVersion = bindings.cairoVersion
+/** jpeglib version. */
+exports.jpegVersion = bindings.jpegVersion
+/** gif_lib version. */
+exports.gifVersion = bindings.gifVersion ? bindings.gifVersion.replace(/[^.\d]/g, '') : undefined
+/** freetype version. */
+exports.freetypeVersion = bindings.freetypeVersion
+/** rsvg version. */
+exports.rsvgVersion = bindings.rsvgVersion
+/** pango version. */
+exports.pangoVersion = bindings.pangoVersion
 
 
 /***/ }),
@@ -2030,6 +2376,10 @@ const {
 const { readDefinitionFile } = __webpack_require__(799);
 const { parentChainFromNode } = __webpack_require__(636);
 const { treatUrl } = __webpack_require__(824);
+const {
+  getBaseBranch,
+  getBaseMappingInfo
+} = __webpack_require__(617);
 
 module.exports = {
   getTree,
@@ -2038,7 +2388,9 @@ module.exports = {
   getOrderedListForProject,
   readDefinitionFile,
   parentChainFromNode,
-  treatUrl
+  treatUrl,
+  getBaseBranch,
+  getBaseMappingInfo
 };
 
 
@@ -2048,6 +2400,36 @@ module.exports = {
 /***/ (function(module) {
 
 module.exports = require("assert");
+
+/***/ }),
+
+/***/ 373:
+/***/ (function(module) {
+
+module.exports = require("crypto");
+
+/***/ }),
+
+/***/ 384:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _v = _interopRequireDefault(__webpack_require__(212));
+
+var _sha = _interopRequireDefault(__webpack_require__(498));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const v5 = (0, _v.default)('v5', 0x50, _sha.default);
+var _default = v5;
+exports.default = _default;
 
 /***/ }),
 
@@ -2095,7 +2477,7 @@ module.exports = new Type('tag:yaml.org,2002:js/undefined', {
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toCommandValue = void 0;
+exports.toCommandProperties = exports.toCommandValue = void 0;
 /**
  * Sanitizes an input into a string so it can be passed into issueCommand safely
  * @param input input to sanitize into a string
@@ -2110,7 +2492,73 @@ function toCommandValue(input) {
     return JSON.stringify(input);
 }
 exports.toCommandValue = toCommandValue;
+/**
+ *
+ * @param annotationProperties
+ * @returns The command properties to send with the actual annotation command
+ * See IssueCommandProperties: https://github.com/actions/runner/blob/main/src/Runner.Worker/ActionCommandManager.cs#L646
+ */
+function toCommandProperties(annotationProperties) {
+    if (!Object.keys(annotationProperties).length) {
+        return {};
+    }
+    return {
+        title: annotationProperties.title,
+        file: annotationProperties.file,
+        line: annotationProperties.startLine,
+        endLine: annotationProperties.endLine,
+        col: annotationProperties.startColumn,
+        endColumn: annotationProperties.endColumn
+    };
+}
+exports.toCommandProperties = toCommandProperties;
 //# sourceMappingURL=utils.js.map
+
+/***/ }),
+
+/***/ 411:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _validate = _interopRequireDefault(__webpack_require__(78));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+const byteToHex = [];
+
+for (let i = 0; i < 256; ++i) {
+  byteToHex.push((i + 0x100).toString(16).substr(1));
+}
+
+function stringify(arr, offset = 0) {
+  // Note: Be careful editing this code!  It's been tuned for performance
+  // and works in ways you may not expect. See https://github.com/uuidjs/uuid/pull/434
+  const uuid = (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + '-' + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + '-' + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + '-' + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + '-' + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase(); // Consistency check for valid UUID.  If this throws, it's likely due to one
+  // of the following:
+  // - One or more input array values don't map to a hex octet (leading to
+  // "undefined" in the uuid)
+  // - Invalid input values for the RFC `version` or `variant` fields
+
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Stringified UUID is invalid');
+  }
+
+  return uuid;
+}
+
+var _default = stringify;
+exports.default = _default;
 
 /***/ }),
 
@@ -2257,6 +2705,618 @@ module.exports = new Type('tag:yaml.org,2002:float', {
   defaultStyle: 'lowercase'
 });
 
+
+/***/ }),
+
+/***/ 425:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HttpClient = exports.isHttps = exports.HttpClientResponse = exports.HttpClientError = exports.getProxyUrl = exports.MediaTypes = exports.Headers = exports.HttpCodes = void 0;
+const http = __importStar(__webpack_require__(605));
+const https = __importStar(__webpack_require__(211));
+const pm = __importStar(__webpack_require__(177));
+const tunnel = __importStar(__webpack_require__(856));
+var HttpCodes;
+(function (HttpCodes) {
+    HttpCodes[HttpCodes["OK"] = 200] = "OK";
+    HttpCodes[HttpCodes["MultipleChoices"] = 300] = "MultipleChoices";
+    HttpCodes[HttpCodes["MovedPermanently"] = 301] = "MovedPermanently";
+    HttpCodes[HttpCodes["ResourceMoved"] = 302] = "ResourceMoved";
+    HttpCodes[HttpCodes["SeeOther"] = 303] = "SeeOther";
+    HttpCodes[HttpCodes["NotModified"] = 304] = "NotModified";
+    HttpCodes[HttpCodes["UseProxy"] = 305] = "UseProxy";
+    HttpCodes[HttpCodes["SwitchProxy"] = 306] = "SwitchProxy";
+    HttpCodes[HttpCodes["TemporaryRedirect"] = 307] = "TemporaryRedirect";
+    HttpCodes[HttpCodes["PermanentRedirect"] = 308] = "PermanentRedirect";
+    HttpCodes[HttpCodes["BadRequest"] = 400] = "BadRequest";
+    HttpCodes[HttpCodes["Unauthorized"] = 401] = "Unauthorized";
+    HttpCodes[HttpCodes["PaymentRequired"] = 402] = "PaymentRequired";
+    HttpCodes[HttpCodes["Forbidden"] = 403] = "Forbidden";
+    HttpCodes[HttpCodes["NotFound"] = 404] = "NotFound";
+    HttpCodes[HttpCodes["MethodNotAllowed"] = 405] = "MethodNotAllowed";
+    HttpCodes[HttpCodes["NotAcceptable"] = 406] = "NotAcceptable";
+    HttpCodes[HttpCodes["ProxyAuthenticationRequired"] = 407] = "ProxyAuthenticationRequired";
+    HttpCodes[HttpCodes["RequestTimeout"] = 408] = "RequestTimeout";
+    HttpCodes[HttpCodes["Conflict"] = 409] = "Conflict";
+    HttpCodes[HttpCodes["Gone"] = 410] = "Gone";
+    HttpCodes[HttpCodes["TooManyRequests"] = 429] = "TooManyRequests";
+    HttpCodes[HttpCodes["InternalServerError"] = 500] = "InternalServerError";
+    HttpCodes[HttpCodes["NotImplemented"] = 501] = "NotImplemented";
+    HttpCodes[HttpCodes["BadGateway"] = 502] = "BadGateway";
+    HttpCodes[HttpCodes["ServiceUnavailable"] = 503] = "ServiceUnavailable";
+    HttpCodes[HttpCodes["GatewayTimeout"] = 504] = "GatewayTimeout";
+})(HttpCodes = exports.HttpCodes || (exports.HttpCodes = {}));
+var Headers;
+(function (Headers) {
+    Headers["Accept"] = "accept";
+    Headers["ContentType"] = "content-type";
+})(Headers = exports.Headers || (exports.Headers = {}));
+var MediaTypes;
+(function (MediaTypes) {
+    MediaTypes["ApplicationJson"] = "application/json";
+})(MediaTypes = exports.MediaTypes || (exports.MediaTypes = {}));
+/**
+ * Returns the proxy URL, depending upon the supplied url and proxy environment variables.
+ * @param serverUrl  The server URL where the request will be sent. For example, https://api.github.com
+ */
+function getProxyUrl(serverUrl) {
+    const proxyUrl = pm.getProxyUrl(new URL(serverUrl));
+    return proxyUrl ? proxyUrl.href : '';
+}
+exports.getProxyUrl = getProxyUrl;
+const HttpRedirectCodes = [
+    HttpCodes.MovedPermanently,
+    HttpCodes.ResourceMoved,
+    HttpCodes.SeeOther,
+    HttpCodes.TemporaryRedirect,
+    HttpCodes.PermanentRedirect
+];
+const HttpResponseRetryCodes = [
+    HttpCodes.BadGateway,
+    HttpCodes.ServiceUnavailable,
+    HttpCodes.GatewayTimeout
+];
+const RetryableHttpVerbs = ['OPTIONS', 'GET', 'DELETE', 'HEAD'];
+const ExponentialBackoffCeiling = 10;
+const ExponentialBackoffTimeSlice = 5;
+class HttpClientError extends Error {
+    constructor(message, statusCode) {
+        super(message);
+        this.name = 'HttpClientError';
+        this.statusCode = statusCode;
+        Object.setPrototypeOf(this, HttpClientError.prototype);
+    }
+}
+exports.HttpClientError = HttpClientError;
+class HttpClientResponse {
+    constructor(message) {
+        this.message = message;
+    }
+    readBody() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+                let output = Buffer.alloc(0);
+                this.message.on('data', (chunk) => {
+                    output = Buffer.concat([output, chunk]);
+                });
+                this.message.on('end', () => {
+                    resolve(output.toString());
+                });
+            }));
+        });
+    }
+}
+exports.HttpClientResponse = HttpClientResponse;
+function isHttps(requestUrl) {
+    const parsedUrl = new URL(requestUrl);
+    return parsedUrl.protocol === 'https:';
+}
+exports.isHttps = isHttps;
+class HttpClient {
+    constructor(userAgent, handlers, requestOptions) {
+        this._ignoreSslError = false;
+        this._allowRedirects = true;
+        this._allowRedirectDowngrade = false;
+        this._maxRedirects = 50;
+        this._allowRetries = false;
+        this._maxRetries = 1;
+        this._keepAlive = false;
+        this._disposed = false;
+        this.userAgent = userAgent;
+        this.handlers = handlers || [];
+        this.requestOptions = requestOptions;
+        if (requestOptions) {
+            if (requestOptions.ignoreSslError != null) {
+                this._ignoreSslError = requestOptions.ignoreSslError;
+            }
+            this._socketTimeout = requestOptions.socketTimeout;
+            if (requestOptions.allowRedirects != null) {
+                this._allowRedirects = requestOptions.allowRedirects;
+            }
+            if (requestOptions.allowRedirectDowngrade != null) {
+                this._allowRedirectDowngrade = requestOptions.allowRedirectDowngrade;
+            }
+            if (requestOptions.maxRedirects != null) {
+                this._maxRedirects = Math.max(requestOptions.maxRedirects, 0);
+            }
+            if (requestOptions.keepAlive != null) {
+                this._keepAlive = requestOptions.keepAlive;
+            }
+            if (requestOptions.allowRetries != null) {
+                this._allowRetries = requestOptions.allowRetries;
+            }
+            if (requestOptions.maxRetries != null) {
+                this._maxRetries = requestOptions.maxRetries;
+            }
+        }
+    }
+    options(requestUrl, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('OPTIONS', requestUrl, null, additionalHeaders || {});
+        });
+    }
+    get(requestUrl, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('GET', requestUrl, null, additionalHeaders || {});
+        });
+    }
+    del(requestUrl, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('DELETE', requestUrl, null, additionalHeaders || {});
+        });
+    }
+    post(requestUrl, data, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('POST', requestUrl, data, additionalHeaders || {});
+        });
+    }
+    patch(requestUrl, data, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('PATCH', requestUrl, data, additionalHeaders || {});
+        });
+    }
+    put(requestUrl, data, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('PUT', requestUrl, data, additionalHeaders || {});
+        });
+    }
+    head(requestUrl, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request('HEAD', requestUrl, null, additionalHeaders || {});
+        });
+    }
+    sendStream(verb, requestUrl, stream, additionalHeaders) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.request(verb, requestUrl, stream, additionalHeaders);
+        });
+    }
+    /**
+     * Gets a typed object from an endpoint
+     * Be aware that not found returns a null.  Other errors (4xx, 5xx) reject the promise
+     */
+    getJson(requestUrl, additionalHeaders = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson);
+            const res = yield this.get(requestUrl, additionalHeaders);
+            return this._processResponse(res, this.requestOptions);
+        });
+    }
+    postJson(requestUrl, obj, additionalHeaders = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = JSON.stringify(obj, null, 2);
+            additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson);
+            additionalHeaders[Headers.ContentType] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.ContentType, MediaTypes.ApplicationJson);
+            const res = yield this.post(requestUrl, data, additionalHeaders);
+            return this._processResponse(res, this.requestOptions);
+        });
+    }
+    putJson(requestUrl, obj, additionalHeaders = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = JSON.stringify(obj, null, 2);
+            additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson);
+            additionalHeaders[Headers.ContentType] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.ContentType, MediaTypes.ApplicationJson);
+            const res = yield this.put(requestUrl, data, additionalHeaders);
+            return this._processResponse(res, this.requestOptions);
+        });
+    }
+    patchJson(requestUrl, obj, additionalHeaders = {}) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = JSON.stringify(obj, null, 2);
+            additionalHeaders[Headers.Accept] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.Accept, MediaTypes.ApplicationJson);
+            additionalHeaders[Headers.ContentType] = this._getExistingOrDefaultHeader(additionalHeaders, Headers.ContentType, MediaTypes.ApplicationJson);
+            const res = yield this.patch(requestUrl, data, additionalHeaders);
+            return this._processResponse(res, this.requestOptions);
+        });
+    }
+    /**
+     * Makes a raw http request.
+     * All other methods such as get, post, patch, and request ultimately call this.
+     * Prefer get, del, post and patch
+     */
+    request(verb, requestUrl, data, headers) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._disposed) {
+                throw new Error('Client has already been disposed.');
+            }
+            const parsedUrl = new URL(requestUrl);
+            let info = this._prepareRequest(verb, parsedUrl, headers);
+            // Only perform retries on reads since writes may not be idempotent.
+            const maxTries = this._allowRetries && RetryableHttpVerbs.includes(verb)
+                ? this._maxRetries + 1
+                : 1;
+            let numTries = 0;
+            let response;
+            do {
+                response = yield this.requestRaw(info, data);
+                // Check if it's an authentication challenge
+                if (response &&
+                    response.message &&
+                    response.message.statusCode === HttpCodes.Unauthorized) {
+                    let authenticationHandler;
+                    for (const handler of this.handlers) {
+                        if (handler.canHandleAuthentication(response)) {
+                            authenticationHandler = handler;
+                            break;
+                        }
+                    }
+                    if (authenticationHandler) {
+                        return authenticationHandler.handleAuthentication(this, info, data);
+                    }
+                    else {
+                        // We have received an unauthorized response but have no handlers to handle it.
+                        // Let the response return to the caller.
+                        return response;
+                    }
+                }
+                let redirectsRemaining = this._maxRedirects;
+                while (response.message.statusCode &&
+                    HttpRedirectCodes.includes(response.message.statusCode) &&
+                    this._allowRedirects &&
+                    redirectsRemaining > 0) {
+                    const redirectUrl = response.message.headers['location'];
+                    if (!redirectUrl) {
+                        // if there's no location to redirect to, we won't
+                        break;
+                    }
+                    const parsedRedirectUrl = new URL(redirectUrl);
+                    if (parsedUrl.protocol === 'https:' &&
+                        parsedUrl.protocol !== parsedRedirectUrl.protocol &&
+                        !this._allowRedirectDowngrade) {
+                        throw new Error('Redirect from HTTPS to HTTP protocol. This downgrade is not allowed for security reasons. If you want to allow this behavior, set the allowRedirectDowngrade option to true.');
+                    }
+                    // we need to finish reading the response before reassigning response
+                    // which will leak the open socket.
+                    yield response.readBody();
+                    // strip authorization header if redirected to a different hostname
+                    if (parsedRedirectUrl.hostname !== parsedUrl.hostname) {
+                        for (const header in headers) {
+                            // header names are case insensitive
+                            if (header.toLowerCase() === 'authorization') {
+                                delete headers[header];
+                            }
+                        }
+                    }
+                    // let's make the request with the new redirectUrl
+                    info = this._prepareRequest(verb, parsedRedirectUrl, headers);
+                    response = yield this.requestRaw(info, data);
+                    redirectsRemaining--;
+                }
+                if (!response.message.statusCode ||
+                    !HttpResponseRetryCodes.includes(response.message.statusCode)) {
+                    // If not a retry code, return immediately instead of retrying
+                    return response;
+                }
+                numTries += 1;
+                if (numTries < maxTries) {
+                    yield response.readBody();
+                    yield this._performExponentialBackoff(numTries);
+                }
+            } while (numTries < maxTries);
+            return response;
+        });
+    }
+    /**
+     * Needs to be called if keepAlive is set to true in request options.
+     */
+    dispose() {
+        if (this._agent) {
+            this._agent.destroy();
+        }
+        this._disposed = true;
+    }
+    /**
+     * Raw request.
+     * @param info
+     * @param data
+     */
+    requestRaw(info, data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                function callbackForResult(err, res) {
+                    if (err) {
+                        reject(err);
+                    }
+                    else if (!res) {
+                        // If `err` is not passed, then `res` must be passed.
+                        reject(new Error('Unknown error'));
+                    }
+                    else {
+                        resolve(res);
+                    }
+                }
+                this.requestRawWithCallback(info, data, callbackForResult);
+            });
+        });
+    }
+    /**
+     * Raw request with callback.
+     * @param info
+     * @param data
+     * @param onResult
+     */
+    requestRawWithCallback(info, data, onResult) {
+        if (typeof data === 'string') {
+            if (!info.options.headers) {
+                info.options.headers = {};
+            }
+            info.options.headers['Content-Length'] = Buffer.byteLength(data, 'utf8');
+        }
+        let callbackCalled = false;
+        function handleResult(err, res) {
+            if (!callbackCalled) {
+                callbackCalled = true;
+                onResult(err, res);
+            }
+        }
+        const req = info.httpModule.request(info.options, (msg) => {
+            const res = new HttpClientResponse(msg);
+            handleResult(undefined, res);
+        });
+        let socket;
+        req.on('socket', sock => {
+            socket = sock;
+        });
+        // If we ever get disconnected, we want the socket to timeout eventually
+        req.setTimeout(this._socketTimeout || 3 * 60000, () => {
+            if (socket) {
+                socket.end();
+            }
+            handleResult(new Error(`Request timeout: ${info.options.path}`));
+        });
+        req.on('error', function (err) {
+            // err has statusCode property
+            // res should have headers
+            handleResult(err);
+        });
+        if (data && typeof data === 'string') {
+            req.write(data, 'utf8');
+        }
+        if (data && typeof data !== 'string') {
+            data.on('close', function () {
+                req.end();
+            });
+            data.pipe(req);
+        }
+        else {
+            req.end();
+        }
+    }
+    /**
+     * Gets an http agent. This function is useful when you need an http agent that handles
+     * routing through a proxy server - depending upon the url and proxy environment variables.
+     * @param serverUrl  The server URL where the request will be sent. For example, https://api.github.com
+     */
+    getAgent(serverUrl) {
+        const parsedUrl = new URL(serverUrl);
+        return this._getAgent(parsedUrl);
+    }
+    _prepareRequest(method, requestUrl, headers) {
+        const info = {};
+        info.parsedUrl = requestUrl;
+        const usingSsl = info.parsedUrl.protocol === 'https:';
+        info.httpModule = usingSsl ? https : http;
+        const defaultPort = usingSsl ? 443 : 80;
+        info.options = {};
+        info.options.host = info.parsedUrl.hostname;
+        info.options.port = info.parsedUrl.port
+            ? parseInt(info.parsedUrl.port)
+            : defaultPort;
+        info.options.path =
+            (info.parsedUrl.pathname || '') + (info.parsedUrl.search || '');
+        info.options.method = method;
+        info.options.headers = this._mergeHeaders(headers);
+        if (this.userAgent != null) {
+            info.options.headers['user-agent'] = this.userAgent;
+        }
+        info.options.agent = this._getAgent(info.parsedUrl);
+        // gives handlers an opportunity to participate
+        if (this.handlers) {
+            for (const handler of this.handlers) {
+                handler.prepareRequest(info.options);
+            }
+        }
+        return info;
+    }
+    _mergeHeaders(headers) {
+        if (this.requestOptions && this.requestOptions.headers) {
+            return Object.assign({}, lowercaseKeys(this.requestOptions.headers), lowercaseKeys(headers || {}));
+        }
+        return lowercaseKeys(headers || {});
+    }
+    _getExistingOrDefaultHeader(additionalHeaders, header, _default) {
+        let clientHeader;
+        if (this.requestOptions && this.requestOptions.headers) {
+            clientHeader = lowercaseKeys(this.requestOptions.headers)[header];
+        }
+        return additionalHeaders[header] || clientHeader || _default;
+    }
+    _getAgent(parsedUrl) {
+        let agent;
+        const proxyUrl = pm.getProxyUrl(parsedUrl);
+        const useProxy = proxyUrl && proxyUrl.hostname;
+        if (this._keepAlive && useProxy) {
+            agent = this._proxyAgent;
+        }
+        if (this._keepAlive && !useProxy) {
+            agent = this._agent;
+        }
+        // if agent is already assigned use that agent.
+        if (agent) {
+            return agent;
+        }
+        const usingSsl = parsedUrl.protocol === 'https:';
+        let maxSockets = 100;
+        if (this.requestOptions) {
+            maxSockets = this.requestOptions.maxSockets || http.globalAgent.maxSockets;
+        }
+        // This is `useProxy` again, but we need to check `proxyURl` directly for TypeScripts's flow analysis.
+        if (proxyUrl && proxyUrl.hostname) {
+            const agentOptions = {
+                maxSockets,
+                keepAlive: this._keepAlive,
+                proxy: Object.assign(Object.assign({}, ((proxyUrl.username || proxyUrl.password) && {
+                    proxyAuth: `${proxyUrl.username}:${proxyUrl.password}`
+                })), { host: proxyUrl.hostname, port: proxyUrl.port })
+            };
+            let tunnelAgent;
+            const overHttps = proxyUrl.protocol === 'https:';
+            if (usingSsl) {
+                tunnelAgent = overHttps ? tunnel.httpsOverHttps : tunnel.httpsOverHttp;
+            }
+            else {
+                tunnelAgent = overHttps ? tunnel.httpOverHttps : tunnel.httpOverHttp;
+            }
+            agent = tunnelAgent(agentOptions);
+            this._proxyAgent = agent;
+        }
+        // if reusing agent across request and tunneling agent isn't assigned create a new agent
+        if (this._keepAlive && !agent) {
+            const options = { keepAlive: this._keepAlive, maxSockets };
+            agent = usingSsl ? new https.Agent(options) : new http.Agent(options);
+            this._agent = agent;
+        }
+        // if not using private agent and tunnel agent isn't setup then use global agent
+        if (!agent) {
+            agent = usingSsl ? https.globalAgent : http.globalAgent;
+        }
+        if (usingSsl && this._ignoreSslError) {
+            // we don't want to set NODE_TLS_REJECT_UNAUTHORIZED=0 since that will affect request for entire process
+            // http.RequestOptions doesn't expose a way to modify RequestOptions.agent.options
+            // we have to cast it to any and change it directly
+            agent.options = Object.assign(agent.options || {}, {
+                rejectUnauthorized: false
+            });
+        }
+        return agent;
+    }
+    _performExponentialBackoff(retryNumber) {
+        return __awaiter(this, void 0, void 0, function* () {
+            retryNumber = Math.min(ExponentialBackoffCeiling, retryNumber);
+            const ms = ExponentialBackoffTimeSlice * Math.pow(2, retryNumber);
+            return new Promise(resolve => setTimeout(() => resolve(), ms));
+        });
+    }
+    _processResponse(res, options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                const statusCode = res.message.statusCode || 0;
+                const response = {
+                    statusCode,
+                    result: null,
+                    headers: {}
+                };
+                // not found leads to null obj returned
+                if (statusCode === HttpCodes.NotFound) {
+                    resolve(response);
+                }
+                // get the result from the body
+                function dateTimeDeserializer(key, value) {
+                    if (typeof value === 'string') {
+                        const a = new Date(value);
+                        if (!isNaN(a.valueOf())) {
+                            return a;
+                        }
+                    }
+                    return value;
+                }
+                let obj;
+                let contents;
+                try {
+                    contents = yield res.readBody();
+                    if (contents && contents.length > 0) {
+                        if (options && options.deserializeDates) {
+                            obj = JSON.parse(contents, dateTimeDeserializer);
+                        }
+                        else {
+                            obj = JSON.parse(contents);
+                        }
+                        response.result = obj;
+                    }
+                    response.headers = res.message.headers;
+                }
+                catch (err) {
+                    // Invalid resource (contents not json);  leaving result obj null
+                }
+                // note that 3xx redirects are handled by the http layer.
+                if (statusCode > 299) {
+                    let msg;
+                    // if exception/error in body, attempt to get better error
+                    if (obj && obj.message) {
+                        msg = obj.message;
+                    }
+                    else if (contents && contents.length > 0) {
+                        // it may be the case that the exception is in the body message as string
+                        msg = contents;
+                    }
+                    else {
+                        msg = `Failed request: (${statusCode})`;
+                    }
+                    const err = new HttpClientError(msg, statusCode);
+                    err.result = response.result;
+                    reject(err);
+                }
+                else {
+                    resolve(response);
+                }
+            }));
+        });
+    }
+}
+exports.HttpClient = HttpClient;
+const lowercaseKeys = (obj) => Object.keys(obj).reduce((c, k) => ((c[k.toLowerCase()] = obj[k]), c), {});
+//# sourceMappingURL=index.js.map
 
 /***/ }),
 
@@ -2488,6 +3548,21 @@ function treatProject(project, buildConfiguration) {
 
 module.exports = { treatProject };
 
+
+/***/ }),
+
+/***/ 456:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
+exports.default = _default;
 
 /***/ }),
 
@@ -4177,12 +5252,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getState = exports.saveState = exports.group = exports.endGroup = exports.startGroup = exports.info = exports.warning = exports.error = exports.debug = exports.isDebug = exports.setFailed = exports.setCommandEcho = exports.setOutput = exports.getBooleanInput = exports.getMultilineInput = exports.getInput = exports.addPath = exports.setSecret = exports.exportVariable = exports.ExitCode = void 0;
+exports.getIDToken = exports.getState = exports.saveState = exports.group = exports.endGroup = exports.startGroup = exports.info = exports.notice = exports.warning = exports.error = exports.debug = exports.isDebug = exports.setFailed = exports.setCommandEcho = exports.setOutput = exports.getBooleanInput = exports.getMultilineInput = exports.getInput = exports.addPath = exports.setSecret = exports.exportVariable = exports.ExitCode = void 0;
 const command_1 = __webpack_require__(431);
 const file_command_1 = __webpack_require__(102);
 const utils_1 = __webpack_require__(394);
 const os = __importStar(__webpack_require__(87));
 const path = __importStar(__webpack_require__(622));
+const oidc_utils_1 = __webpack_require__(503);
 /**
  * The code to exit an action
  */
@@ -4211,13 +5287,9 @@ function exportVariable(name, val) {
     process.env[name] = convertedVal;
     const filePath = process.env['GITHUB_ENV'] || '';
     if (filePath) {
-        const delimiter = '_GitHubActionsFileCommandDelimeter_';
-        const commandValue = `${name}<<${delimiter}${os.EOL}${convertedVal}${os.EOL}${delimiter}`;
-        file_command_1.issueCommand('ENV', commandValue);
+        return file_command_1.issueFileCommand('ENV', file_command_1.prepareKeyValueMessage(name, val));
     }
-    else {
-        command_1.issueCommand('set-env', { name }, convertedVal);
-    }
+    command_1.issueCommand('set-env', { name }, convertedVal);
 }
 exports.exportVariable = exportVariable;
 /**
@@ -4235,7 +5307,7 @@ exports.setSecret = setSecret;
 function addPath(inputPath) {
     const filePath = process.env['GITHUB_PATH'] || '';
     if (filePath) {
-        file_command_1.issueCommand('PATH', inputPath);
+        file_command_1.issueFileCommand('PATH', inputPath);
     }
     else {
         command_1.issueCommand('add-path', {}, inputPath);
@@ -4275,7 +5347,10 @@ function getMultilineInput(name, options) {
     const inputs = getInput(name, options)
         .split('\n')
         .filter(x => x !== '');
-    return inputs;
+    if (options && options.trimWhitespace === false) {
+        return inputs;
+    }
+    return inputs.map(input => input.trim());
 }
 exports.getMultilineInput = getMultilineInput;
 /**
@@ -4308,8 +5383,12 @@ exports.getBooleanInput = getBooleanInput;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setOutput(name, value) {
+    const filePath = process.env['GITHUB_OUTPUT'] || '';
+    if (filePath) {
+        return file_command_1.issueFileCommand('OUTPUT', file_command_1.prepareKeyValueMessage(name, value));
+    }
     process.stdout.write(os.EOL);
-    command_1.issueCommand('set-output', { name }, value);
+    command_1.issueCommand('set-output', { name }, utils_1.toCommandValue(value));
 }
 exports.setOutput = setOutput;
 /**
@@ -4355,19 +5434,30 @@ exports.debug = debug;
 /**
  * Adds an error issue
  * @param message error issue message. Errors will be converted to string via toString()
+ * @param properties optional properties to add to the annotation.
  */
-function error(message) {
-    command_1.issue('error', message instanceof Error ? message.toString() : message);
+function error(message, properties = {}) {
+    command_1.issueCommand('error', utils_1.toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 exports.error = error;
 /**
- * Adds an warning issue
+ * Adds a warning issue
  * @param message warning issue message. Errors will be converted to string via toString()
+ * @param properties optional properties to add to the annotation.
  */
-function warning(message) {
-    command_1.issue('warning', message instanceof Error ? message.toString() : message);
+function warning(message, properties = {}) {
+    command_1.issueCommand('warning', utils_1.toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 exports.warning = warning;
+/**
+ * Adds a notice issue
+ * @param message notice issue message. Errors will be converted to string via toString()
+ * @param properties optional properties to add to the annotation.
+ */
+function notice(message, properties = {}) {
+    command_1.issueCommand('notice', utils_1.toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+}
+exports.notice = notice;
 /**
  * Writes info to log with console.log.
  * @param message info message
@@ -4427,7 +5517,11 @@ exports.group = group;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function saveState(name, value) {
-    command_1.issueCommand('save-state', { name }, value);
+    const filePath = process.env['GITHUB_STATE'] || '';
+    if (filePath) {
+        return file_command_1.issueFileCommand('STATE', file_command_1.prepareKeyValueMessage(name, value));
+    }
+    command_1.issueCommand('save-state', { name }, utils_1.toCommandValue(value));
 }
 exports.saveState = saveState;
 /**
@@ -4440,6 +5534,29 @@ function getState(name) {
     return process.env[`STATE_${name}`] || '';
 }
 exports.getState = getState;
+function getIDToken(aud) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield oidc_utils_1.OidcClient.getIDToken(aud);
+    });
+}
+exports.getIDToken = getIDToken;
+/**
+ * Summary exports
+ */
+var summary_1 = __webpack_require__(665);
+Object.defineProperty(exports, "summary", { enumerable: true, get: function () { return summary_1.summary; } });
+/**
+ * @deprecated use core.summary
+ */
+var summary_2 = __webpack_require__(665);
+Object.defineProperty(exports, "markdownSummary", { enumerable: true, get: function () { return summary_2.markdownSummary; } });
+/**
+ * Path exports
+ */
+var path_utils_1 = __webpack_require__(573);
+Object.defineProperty(exports, "toPosixPath", { enumerable: true, get: function () { return path_utils_1.toPosixPath; } });
+Object.defineProperty(exports, "toWin32Path", { enumerable: true, get: function () { return path_utils_1.toWin32Path; } });
+Object.defineProperty(exports, "toPlatformPath", { enumerable: true, get: function () { return path_utils_1.toPlatformPath; } });
 //# sourceMappingURL=core.js.map
 
 /***/ }),
@@ -4454,35 +5571,33 @@ const util = __webpack_require__(669)
 
 // DOMMatrix per https://drafts.fxtf.org/geometry/#DOMMatrix
 
-function DOMPoint(x, y, z, w) {
-  if (!(this instanceof DOMPoint)) {
-    throw new TypeError("Class constructors cannot be invoked without 'new'")
+class DOMPoint {
+  constructor (x, y, z, w) {
+    if (typeof x === 'object' && x !== null) {
+      w = x.w
+      z = x.z
+      y = x.y
+      x = x.x
+    }
+    this.x = typeof x === 'number' ? x : 0
+    this.y = typeof y === 'number' ? y : 0
+    this.z = typeof z === 'number' ? z : 0
+    this.w = typeof w === 'number' ? w : 1
   }
-
-  if (typeof x === 'object') {
-    w = x.w
-    z = x.z
-    y = x.y
-    x = x.x
-  }
-  this.x = typeof x === 'number' ? x : 0
-  this.y = typeof y === 'number' ? y : 0
-  this.z = typeof z === 'number' ? z : 0
-  this.w = typeof w === 'number' ? w : 1
 }
 
 // Constants to index into _values (col-major)
-const M11 = 0, M12 = 1, M13 = 2, M14 = 3
-const M21 = 4, M22 = 5, M23 = 6, M24 = 7
-const M31 = 8, M32 = 9, M33 = 10, M34 = 11
-const M41 = 12, M42 = 13, M43 = 14, M44 = 15
+const M11 = 0; const M12 = 1; const M13 = 2; const M14 = 3
+const M21 = 4; const M22 = 5; const M23 = 6; const M24 = 7
+const M31 = 8; const M32 = 9; const M33 = 10; const M34 = 11
+const M41 = 12; const M42 = 13; const M43 = 14; const M44 = 15
 
 const DEGREE_PER_RAD = 180 / Math.PI
 const RAD_PER_DEGREE = Math.PI / 180
 
-function parseMatrix(init) {
-  var parsed = init.replace(/matrix\(/, '')
-  parsed = parsed.split(/,/, 7) // 6 + 1 to handle too many params
+function parseMatrix (init) {
+  let parsed = init.replace('matrix(', '')
+  parsed = parsed.split(',', 7) // 6 + 1 to handle too many params
   if (parsed.length !== 6) throw new Error(`Failed to parse ${init}`)
   parsed = parsed.map(parseFloat)
   return [
@@ -4493,15 +5608,15 @@ function parseMatrix(init) {
   ]
 }
 
-function parseMatrix3d(init) {
-  var parsed = init.replace(/matrix3d\(/, '')
-  parsed = parsed.split(/,/, 17) // 16 + 1 to handle too many params
+function parseMatrix3d (init) {
+  let parsed = init.replace('matrix3d(', '')
+  parsed = parsed.split(',', 17) // 16 + 1 to handle too many params
   if (parsed.length !== 16) throw new Error(`Failed to parse ${init}`)
   return parsed.map(parseFloat)
 }
 
-function parseTransform(tform) {
-  var type = tform.split(/\(/, 1)[0]
+function parseTransform (tform) {
+  const type = tform.split('(', 1)[0]
   switch (type) {
     case 'matrix':
       return parseMatrix(tform)
@@ -4513,163 +5628,531 @@ function parseTransform(tform) {
   }
 }
 
-function DOMMatrix (init) {
-  if (!(this instanceof DOMMatrix)) {
-    throw new TypeError("Class constructors cannot be invoked without 'new'")
+class DOMMatrix {
+  constructor (init) {
+    this._is2D = true
+    this._values = new Float64Array([
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ])
+
+    let i
+
+    if (typeof init === 'string') { // parse CSS transformList
+      if (init === '') return // default identity matrix
+      const tforms = init.split(/\)\s+/, 20).map(parseTransform)
+      if (tforms.length === 0) return
+      init = tforms[0]
+      for (i = 1; i < tforms.length; i++) init = multiply(tforms[i], init)
+    }
+
+    i = 0
+    if (init && init.length === 6) {
+      setNumber2D(this, M11, init[i++])
+      setNumber2D(this, M12, init[i++])
+      setNumber2D(this, M21, init[i++])
+      setNumber2D(this, M22, init[i++])
+      setNumber2D(this, M41, init[i++])
+      setNumber2D(this, M42, init[i++])
+    } else if (init && init.length === 16) {
+      setNumber2D(this, M11, init[i++])
+      setNumber2D(this, M12, init[i++])
+      setNumber3D(this, M13, init[i++])
+      setNumber3D(this, M14, init[i++])
+      setNumber2D(this, M21, init[i++])
+      setNumber2D(this, M22, init[i++])
+      setNumber3D(this, M23, init[i++])
+      setNumber3D(this, M24, init[i++])
+      setNumber3D(this, M31, init[i++])
+      setNumber3D(this, M32, init[i++])
+      setNumber3D(this, M33, init[i++])
+      setNumber3D(this, M34, init[i++])
+      setNumber2D(this, M41, init[i++])
+      setNumber2D(this, M42, init[i++])
+      setNumber3D(this, M43, init[i++])
+      setNumber3D(this, M44, init[i])
+    } else if (init !== undefined) {
+      throw new TypeError('Expected string or array.')
+    }
   }
 
-  this._is2D = true
-  this._values = new Float64Array([
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ])
-
-  var i
-
-  if (typeof init === 'string') { // parse CSS transformList
-    if (init === '') return // default identity matrix
-    var tforms = init.split(/\)\s+/, 20).map(parseTransform)
-    if (tforms.length === 0) return
-    init = tforms[0]
-    for (i = 1; i < tforms.length; i++) init = multiply(tforms[i], init)
+  toString () {
+    return this.is2D
+      ? `matrix(${this.a}, ${this.b}, ${this.c}, ${this.d}, ${this.e}, ${this.f})`
+      : `matrix3d(${this._values.join(', ')})`
   }
 
-  i = 0
-  if (init && init.length === 6) {
-    setNumber2D(this, M11, init[i++])
-    setNumber2D(this, M12, init[i++])
-    setNumber2D(this, M21, init[i++])
-    setNumber2D(this, M22, init[i++])
-    setNumber2D(this, M41, init[i++])
-    setNumber2D(this, M42, init[i++])
-  } else if (init && init.length === 16) {
-    setNumber2D(this, M11, init[i++])
-    setNumber2D(this, M12, init[i++])
-    setNumber3D(this, M13, init[i++])
-    setNumber3D(this, M14, init[i++])
-    setNumber2D(this, M21, init[i++])
-    setNumber2D(this, M22, init[i++])
-    setNumber3D(this, M23, init[i++])
-    setNumber3D(this, M24, init[i++])
-    setNumber3D(this, M31, init[i++])
-    setNumber3D(this, M32, init[i++])
-    setNumber3D(this, M33, init[i++])
-    setNumber3D(this, M34, init[i++])
-    setNumber2D(this, M41, init[i++])
-    setNumber2D(this, M42, init[i++])
-    setNumber3D(this, M43, init[i++])
-    setNumber3D(this, M44, init[i])
-  } else if (init !== undefined) {
-    throw new TypeError('Expected string or array.')
+  multiply (other) {
+    return newInstance(this._values).multiplySelf(other)
   }
-}
 
-DOMMatrix.fromMatrix = function (init) {
-  if (!(init instanceof DOMMatrix)) throw new TypeError('Expected DOMMatrix')
-  return new DOMMatrix(init._values)
-}
-DOMMatrix.fromFloat32Array = function (init) {
-  if (!(init instanceof Float32Array)) throw new TypeError('Expected Float32Array')
-  return new DOMMatrix(init)
-}
-DOMMatrix.fromFloat64Array = function (init) {
-  if (!(init instanceof Float64Array)) throw new TypeError('Expected Float64Array')
-  return new DOMMatrix(init)
-}
+  multiplySelf (other) {
+    this._values = multiply(other._values, this._values)
+    if (!other.is2D) this._is2D = false
+    return this
+  }
 
-// TODO || is for Node.js pre-v6.6.0
-DOMMatrix.prototype[util.inspect.custom || 'inspect'] = function (depth, options) {
-  if (depth < 0) return '[DOMMatrix]'
+  preMultiplySelf (other) {
+    this._values = multiply(this._values, other._values)
+    if (!other.is2D) this._is2D = false
+    return this
+  }
 
-  return `DOMMatrix [
-    a: ${this.a}
-    b: ${this.b}
-    c: ${this.c}
-    d: ${this.d}
-    e: ${this.e}
-    f: ${this.f}
-    m11: ${this.m11}
-    m12: ${this.m12}
-    m13: ${this.m13}
-    m14: ${this.m14}
-    m21: ${this.m21}
-    m22: ${this.m22}
-    m23: ${this.m23}
-    m23: ${this.m23}
-    m31: ${this.m31}
-    m32: ${this.m32}
-    m33: ${this.m33}
-    m34: ${this.m34}
-    m41: ${this.m41}
-    m42: ${this.m42}
-    m43: ${this.m43}
-    m44: ${this.m44}
-    is2D: ${this.is2D}
-    isIdentity: ${this.isIdentity} ]`
-}
+  translate (tx, ty, tz) {
+    return newInstance(this._values).translateSelf(tx, ty, tz)
+  }
 
-DOMMatrix.prototype.toString = function () {
-  return this.is2D ?
-    `matrix(${this.a}, ${this.b}, ${this.c}, ${this.d}, ${this.e}, ${this.f})` :
-    `matrix3d(${this._values.join(', ')})`
+  translateSelf (tx, ty, tz) {
+    if (typeof tx !== 'number') tx = 0
+    if (typeof ty !== 'number') ty = 0
+    if (typeof tz !== 'number') tz = 0
+    this._values = multiply([
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      tx, ty, tz, 1
+    ], this._values)
+    if (tz !== 0) this._is2D = false
+    return this
+  }
+
+  scale (scaleX, scaleY, scaleZ, originX, originY, originZ) {
+    return newInstance(this._values).scaleSelf(scaleX, scaleY, scaleZ, originX, originY, originZ)
+  }
+
+  scale3d (scale, originX, originY, originZ) {
+    return newInstance(this._values).scale3dSelf(scale, originX, originY, originZ)
+  }
+
+  scale3dSelf (scale, originX, originY, originZ) {
+    return this.scaleSelf(scale, scale, scale, originX, originY, originZ)
+  }
+
+  scaleSelf (scaleX, scaleY, scaleZ, originX, originY, originZ) {
+    // Not redundant with translate's checks because we need to negate the values later.
+    if (typeof originX !== 'number') originX = 0
+    if (typeof originY !== 'number') originY = 0
+    if (typeof originZ !== 'number') originZ = 0
+    this.translateSelf(originX, originY, originZ)
+    if (typeof scaleX !== 'number') scaleX = 1
+    if (typeof scaleY !== 'number') scaleY = scaleX
+    if (typeof scaleZ !== 'number') scaleZ = 1
+    this._values = multiply([
+      scaleX, 0, 0, 0,
+      0, scaleY, 0, 0,
+      0, 0, scaleZ, 0,
+      0, 0, 0, 1
+    ], this._values)
+    this.translateSelf(-originX, -originY, -originZ)
+    if (scaleZ !== 1 || originZ !== 0) this._is2D = false
+    return this
+  }
+
+  rotateFromVector (x, y) {
+    return newInstance(this._values).rotateFromVectorSelf(x, y)
+  }
+
+  rotateFromVectorSelf (x, y) {
+    if (typeof x !== 'number') x = 0
+    if (typeof y !== 'number') y = 0
+    const theta = (x === 0 && y === 0) ? 0 : Math.atan2(y, x) * DEGREE_PER_RAD
+    return this.rotateSelf(theta)
+  }
+
+  rotate (rotX, rotY, rotZ) {
+    return newInstance(this._values).rotateSelf(rotX, rotY, rotZ)
+  }
+
+  rotateSelf (rotX, rotY, rotZ) {
+    if (rotY === undefined && rotZ === undefined) {
+      rotZ = rotX
+      rotX = rotY = 0
+    }
+    if (typeof rotY !== 'number') rotY = 0
+    if (typeof rotZ !== 'number') rotZ = 0
+    if (rotX !== 0 || rotY !== 0) this._is2D = false
+    rotX *= RAD_PER_DEGREE
+    rotY *= RAD_PER_DEGREE
+    rotZ *= RAD_PER_DEGREE
+    let c, s
+    c = Math.cos(rotZ)
+    s = Math.sin(rotZ)
+    this._values = multiply([
+      c, s, 0, 0,
+      -s, c, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ], this._values)
+    c = Math.cos(rotY)
+    s = Math.sin(rotY)
+    this._values = multiply([
+      c, 0, -s, 0,
+      0, 1, 0, 0,
+      s, 0, c, 0,
+      0, 0, 0, 1
+    ], this._values)
+    c = Math.cos(rotX)
+    s = Math.sin(rotX)
+    this._values = multiply([
+      1, 0, 0, 0,
+      0, c, s, 0,
+      0, -s, c, 0,
+      0, 0, 0, 1
+    ], this._values)
+    return this
+  }
+
+  rotateAxisAngle (x, y, z, angle) {
+    return newInstance(this._values).rotateAxisAngleSelf(x, y, z, angle)
+  }
+
+  rotateAxisAngleSelf (x, y, z, angle) {
+    if (typeof x !== 'number') x = 0
+    if (typeof y !== 'number') y = 0
+    if (typeof z !== 'number') z = 0
+    // Normalize axis
+    const length = Math.sqrt(x * x + y * y + z * z)
+    if (length === 0) return this
+    if (length !== 1) {
+      x /= length
+      y /= length
+      z /= length
+    }
+    angle *= RAD_PER_DEGREE
+    const c = Math.cos(angle)
+    const s = Math.sin(angle)
+    const t = 1 - c
+    const tx = t * x
+    const ty = t * y
+    // NB: This is the generic transform. If the axis is a major axis, there are
+    // faster transforms.
+    this._values = multiply([
+      tx * x + c, tx * y + s * z, tx * z - s * y, 0,
+      tx * y - s * z, ty * y + c, ty * z + s * x, 0,
+      tx * z + s * y, ty * z - s * x, t * z * z + c, 0,
+      0, 0, 0, 1
+    ], this._values)
+    if (x !== 0 || y !== 0) this._is2D = false
+    return this
+  }
+
+  skewX (sx) {
+    return newInstance(this._values).skewXSelf(sx)
+  }
+
+  skewXSelf (sx) {
+    if (typeof sx !== 'number') return this
+    const t = Math.tan(sx * RAD_PER_DEGREE)
+    this._values = multiply([
+      1, 0, 0, 0,
+      t, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ], this._values)
+    return this
+  }
+
+  skewY (sy) {
+    return newInstance(this._values).skewYSelf(sy)
+  }
+
+  skewYSelf (sy) {
+    if (typeof sy !== 'number') return this
+    const t = Math.tan(sy * RAD_PER_DEGREE)
+    this._values = multiply([
+      1, t, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ], this._values)
+    return this
+  }
+
+  flipX () {
+    return newInstance(multiply([
+      -1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ], this._values))
+  }
+
+  flipY () {
+    return newInstance(multiply([
+      1, 0, 0, 0,
+      0, -1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ], this._values))
+  }
+
+  inverse () {
+    return newInstance(this._values).invertSelf()
+  }
+
+  invertSelf () {
+    const m = this._values
+    const inv = m.map(v => 0)
+
+    inv[0] = m[5] * m[10] * m[15] -
+            m[5] * m[11] * m[14] -
+            m[9] * m[6] * m[15] +
+            m[9] * m[7] * m[14] +
+            m[13] * m[6] * m[11] -
+            m[13] * m[7] * m[10]
+
+    inv[4] = -m[4] * m[10] * m[15] +
+            m[4] * m[11] * m[14] +
+            m[8] * m[6] * m[15] -
+            m[8] * m[7] * m[14] -
+            m[12] * m[6] * m[11] +
+            m[12] * m[7] * m[10]
+
+    inv[8] = m[4] * m[9] * m[15] -
+            m[4] * m[11] * m[13] -
+            m[8] * m[5] * m[15] +
+            m[8] * m[7] * m[13] +
+            m[12] * m[5] * m[11] -
+            m[12] * m[7] * m[9]
+
+    inv[12] = -m[4] * m[9] * m[14] +
+            m[4] * m[10] * m[13] +
+            m[8] * m[5] * m[14] -
+            m[8] * m[6] * m[13] -
+            m[12] * m[5] * m[10] +
+            m[12] * m[6] * m[9]
+
+    // If the determinant is zero, this matrix cannot be inverted, and all
+    // values should be set to NaN, with the is2D flag set to false.
+
+    const det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12]
+
+    if (det === 0) {
+      this._values = m.map(v => NaN)
+      this._is2D = false
+      return this
+    }
+
+    inv[1] = -m[1] * m[10] * m[15] +
+            m[1] * m[11] * m[14] +
+            m[9] * m[2] * m[15] -
+            m[9] * m[3] * m[14] -
+            m[13] * m[2] * m[11] +
+            m[13] * m[3] * m[10]
+
+    inv[5] = m[0] * m[10] * m[15] -
+            m[0] * m[11] * m[14] -
+            m[8] * m[2] * m[15] +
+            m[8] * m[3] * m[14] +
+            m[12] * m[2] * m[11] -
+            m[12] * m[3] * m[10]
+
+    inv[9] = -m[0] * m[9] * m[15] +
+            m[0] * m[11] * m[13] +
+            m[8] * m[1] * m[15] -
+            m[8] * m[3] * m[13] -
+            m[12] * m[1] * m[11] +
+            m[12] * m[3] * m[9]
+
+    inv[13] = m[0] * m[9] * m[14] -
+            m[0] * m[10] * m[13] -
+            m[8] * m[1] * m[14] +
+            m[8] * m[2] * m[13] +
+            m[12] * m[1] * m[10] -
+            m[12] * m[2] * m[9]
+
+    inv[2] = m[1] * m[6] * m[15] -
+            m[1] * m[7] * m[14] -
+            m[5] * m[2] * m[15] +
+            m[5] * m[3] * m[14] +
+            m[13] * m[2] * m[7] -
+            m[13] * m[3] * m[6]
+
+    inv[6] = -m[0] * m[6] * m[15] +
+            m[0] * m[7] * m[14] +
+            m[4] * m[2] * m[15] -
+            m[4] * m[3] * m[14] -
+            m[12] * m[2] * m[7] +
+            m[12] * m[3] * m[6]
+
+    inv[10] = m[0] * m[5] * m[15] -
+            m[0] * m[7] * m[13] -
+            m[4] * m[1] * m[15] +
+            m[4] * m[3] * m[13] +
+            m[12] * m[1] * m[7] -
+            m[12] * m[3] * m[5]
+
+    inv[14] = -m[0] * m[5] * m[14] +
+            m[0] * m[6] * m[13] +
+            m[4] * m[1] * m[14] -
+            m[4] * m[2] * m[13] -
+            m[12] * m[1] * m[6] +
+            m[12] * m[2] * m[5]
+
+    inv[3] = -m[1] * m[6] * m[11] +
+            m[1] * m[7] * m[10] +
+            m[5] * m[2] * m[11] -
+            m[5] * m[3] * m[10] -
+            m[9] * m[2] * m[7] +
+            m[9] * m[3] * m[6]
+
+    inv[7] = m[0] * m[6] * m[11] -
+            m[0] * m[7] * m[10] -
+            m[4] * m[2] * m[11] +
+            m[4] * m[3] * m[10] +
+            m[8] * m[2] * m[7] -
+            m[8] * m[3] * m[6]
+
+    inv[11] = -m[0] * m[5] * m[11] +
+            m[0] * m[7] * m[9] +
+            m[4] * m[1] * m[11] -
+            m[4] * m[3] * m[9] -
+            m[8] * m[1] * m[7] +
+            m[8] * m[3] * m[5]
+
+    inv[15] = m[0] * m[5] * m[10] -
+            m[0] * m[6] * m[9] -
+            m[4] * m[1] * m[10] +
+            m[4] * m[2] * m[9] +
+            m[8] * m[1] * m[6] -
+            m[8] * m[2] * m[5]
+
+    inv.forEach((v, i) => { inv[i] = v / det })
+    this._values = inv
+    return this
+  }
+
+  setMatrixValue (transformList) {
+    const temp = new DOMMatrix(transformList)
+    this._values = temp._values
+    this._is2D = temp._is2D
+    return this
+  }
+
+  transformPoint (point) {
+    point = new DOMPoint(point)
+    const x = point.x
+    const y = point.y
+    const z = point.z
+    const w = point.w
+    const values = this._values
+    const nx = values[M11] * x + values[M21] * y + values[M31] * z + values[M41] * w
+    const ny = values[M12] * x + values[M22] * y + values[M32] * z + values[M42] * w
+    const nz = values[M13] * x + values[M23] * y + values[M33] * z + values[M43] * w
+    const nw = values[M14] * x + values[M24] * y + values[M34] * z + values[M44] * w
+    return new DOMPoint(nx, ny, nz, nw)
+  }
+
+  toFloat32Array () {
+    return Float32Array.from(this._values)
+  }
+
+  toFloat64Array () {
+    return this._values.slice(0)
+  }
+
+  static fromMatrix (init) {
+    if (!(init instanceof DOMMatrix)) throw new TypeError('Expected DOMMatrix')
+    return new DOMMatrix(init._values)
+  }
+
+  static fromFloat32Array (init) {
+    if (!(init instanceof Float32Array)) throw new TypeError('Expected Float32Array')
+    return new DOMMatrix(init)
+  }
+
+  static fromFloat64Array (init) {
+    if (!(init instanceof Float64Array)) throw new TypeError('Expected Float64Array')
+    return new DOMMatrix(init)
+  }
+
+  [util.inspect.custom || 'inspect'] (depth, options) {
+    if (depth < 0) return '[DOMMatrix]'
+
+    return `DOMMatrix [
+      a: ${this.a}
+      b: ${this.b}
+      c: ${this.c}
+      d: ${this.d}
+      e: ${this.e}
+      f: ${this.f}
+      m11: ${this.m11}
+      m12: ${this.m12}
+      m13: ${this.m13}
+      m14: ${this.m14}
+      m21: ${this.m21}
+      m22: ${this.m22}
+      m23: ${this.m23}
+      m23: ${this.m23}
+      m31: ${this.m31}
+      m32: ${this.m32}
+      m33: ${this.m33}
+      m34: ${this.m34}
+      m41: ${this.m41}
+      m42: ${this.m42}
+      m43: ${this.m43}
+      m44: ${this.m44}
+      is2D: ${this.is2D}
+      isIdentity: ${this.isIdentity} ]`
+  }
 }
 
 /**
  * Checks that `value` is a number and sets the value.
  */
-function setNumber2D(receiver, index, value) {
+function setNumber2D (receiver, index, value) {
   if (typeof value !== 'number') throw new TypeError('Expected number')
-  return receiver._values[index] = value
+  return (receiver._values[index] = value)
 }
 
 /**
  * Checks that `value` is a number, sets `_is2D = false` if necessary and sets
  * the value.
  */
-function setNumber3D(receiver, index, value) {
+function setNumber3D (receiver, index, value) {
   if (typeof value !== 'number') throw new TypeError('Expected number')
   if (index === M33 || index === M44) {
     if (value !== 1) receiver._is2D = false
   } else if (value !== 0) receiver._is2D = false
-  return receiver._values[index] = value
+  return (receiver._values[index] = value)
 }
 
 Object.defineProperties(DOMMatrix.prototype, {
-  m11: {get: function () { return this._values[M11] }, set: function (v) { return setNumber2D(this, M11, v) }},
-  m12: {get: function () { return this._values[M12] }, set: function (v) { return setNumber2D(this, M12, v) }},
-  m13: {get: function () { return this._values[M13] }, set: function (v) { return setNumber3D(this, M13, v) }},
-  m14: {get: function () { return this._values[M14] }, set: function (v) { return setNumber3D(this, M14, v) }},
-  m21: {get: function () { return this._values[M21] }, set: function (v) { return setNumber2D(this, M21, v) }},
-  m22: {get: function () { return this._values[M22] }, set: function (v) { return setNumber2D(this, M22, v) }},
-  m23: {get: function () { return this._values[M23] }, set: function (v) { return setNumber3D(this, M23, v) }},
-  m24: {get: function () { return this._values[M24] }, set: function (v) { return setNumber3D(this, M24, v) }},
-  m31: {get: function () { return this._values[M31] }, set: function (v) { return setNumber3D(this, M31, v) }},
-  m32: {get: function () { return this._values[M32] }, set: function (v) { return setNumber3D(this, M32, v) }},
-  m33: {get: function () { return this._values[M33] }, set: function (v) { return setNumber3D(this, M33, v) }},
-  m34: {get: function () { return this._values[M34] }, set: function (v) { return setNumber3D(this, M34, v) }},
-  m41: {get: function () { return this._values[M41] }, set: function (v) { return setNumber2D(this, M41, v) }},
-  m42: {get: function () { return this._values[M42] }, set: function (v) { return setNumber2D(this, M42, v) }},
-  m43: {get: function () { return this._values[M43] }, set: function (v) { return setNumber3D(this, M43, v) }},
-  m44: {get: function () { return this._values[M44] }, set: function (v) { return setNumber3D(this, M44, v) }},
+  m11: { get () { return this._values[M11] }, set (v) { return setNumber2D(this, M11, v) } },
+  m12: { get () { return this._values[M12] }, set (v) { return setNumber2D(this, M12, v) } },
+  m13: { get () { return this._values[M13] }, set (v) { return setNumber3D(this, M13, v) } },
+  m14: { get () { return this._values[M14] }, set (v) { return setNumber3D(this, M14, v) } },
+  m21: { get () { return this._values[M21] }, set (v) { return setNumber2D(this, M21, v) } },
+  m22: { get () { return this._values[M22] }, set (v) { return setNumber2D(this, M22, v) } },
+  m23: { get () { return this._values[M23] }, set (v) { return setNumber3D(this, M23, v) } },
+  m24: { get () { return this._values[M24] }, set (v) { return setNumber3D(this, M24, v) } },
+  m31: { get () { return this._values[M31] }, set (v) { return setNumber3D(this, M31, v) } },
+  m32: { get () { return this._values[M32] }, set (v) { return setNumber3D(this, M32, v) } },
+  m33: { get () { return this._values[M33] }, set (v) { return setNumber3D(this, M33, v) } },
+  m34: { get () { return this._values[M34] }, set (v) { return setNumber3D(this, M34, v) } },
+  m41: { get () { return this._values[M41] }, set (v) { return setNumber2D(this, M41, v) } },
+  m42: { get () { return this._values[M42] }, set (v) { return setNumber2D(this, M42, v) } },
+  m43: { get () { return this._values[M43] }, set (v) { return setNumber3D(this, M43, v) } },
+  m44: { get () { return this._values[M44] }, set (v) { return setNumber3D(this, M44, v) } },
 
-  a: {get: function () { return this.m11 }, set: function (v) { return this.m11 = v }},
-  b: {get: function () { return this.m12 }, set: function (v) { return this.m12 = v }},
-  c: {get: function () { return this.m21 }, set: function (v) { return this.m21 = v }},
-  d: {get: function () { return this.m22 }, set: function (v) { return this.m22 = v }},
-  e: {get: function () { return this.m41 }, set: function (v) { return this.m41 = v }},
-  f: {get: function () { return this.m42 }, set: function (v) { return this.m42 = v }},
+  a: { get () { return this.m11 }, set (v) { return (this.m11 = v) } },
+  b: { get () { return this.m12 }, set (v) { return (this.m12 = v) } },
+  c: { get () { return this.m21 }, set (v) { return (this.m21 = v) } },
+  d: { get () { return this.m22 }, set (v) { return (this.m22 = v) } },
+  e: { get () { return this.m41 }, set (v) { return (this.m41 = v) } },
+  f: { get () { return this.m42 }, set (v) { return (this.m42 = v) } },
 
-  is2D: {get: function () { return this._is2D }}, // read-only
+  is2D: { get () { return this._is2D } }, // read-only
 
   isIdentity: {
-    get: function () {
-      var values = this._values
-      return values[M11] === 1 && values[M12] === 0 && values[M13] === 0 && values[M14] === 0 &&
+    get () {
+      const values = this._values
+      return (values[M11] === 1 && values[M12] === 0 && values[M13] === 0 && values[M14] === 0 &&
              values[M21] === 0 && values[M22] === 1 && values[M23] === 0 && values[M24] === 0 &&
              values[M31] === 0 && values[M32] === 0 && values[M33] === 1 && values[M34] === 0 &&
-             values[M41] === 0 && values[M42] === 0 && values[M43] === 0 && values[M44] === 1
+             values[M41] === 0 && values[M42] === 0 && values[M43] === 0 && values[M44] === 1)
     }
   }
 })
@@ -4679,20 +6162,20 @@ Object.defineProperties(DOMMatrix.prototype, {
  * @param {Float64Array} values Value to assign to `_values`. This is assigned
  *   without copying (okay because all usages are followed by a  multiply).
  */
-function newInstance(values) {
-  var instance = Object.create(DOMMatrix.prototype)
+function newInstance (values) {
+  const instance = Object.create(DOMMatrix.prototype)
   instance.constructor = DOMMatrix
   instance._is2D = true
   instance._values = values
   return instance
 }
 
-function multiply(A, B) {
-  var dest = new Float64Array(16)
-  for (var i = 0; i < 4; i++) {
-    for (var j = 0; j < 4; j++) {
-      var sum = 0
-      for (var k = 0; k < 4; k++) {
+function multiply (A, B) {
+  const dest = new Float64Array(16)
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
+      let sum = 0
+      for (let k = 0; k < 4; k++) {
         sum += A[i * 4 + k] * B[k * 4 + j]
       }
       dest[i * 4 + j] = sum
@@ -4701,362 +6184,7 @@ function multiply(A, B) {
   return dest
 }
 
-DOMMatrix.prototype.multiply = function (other) {
-  return newInstance(this._values).multiplySelf(other)
-}
-DOMMatrix.prototype.multiplySelf = function (other) {
-  this._values = multiply(other._values, this._values)
-  if (!other.is2D) this._is2D = false
-  return this
-}
-DOMMatrix.prototype.preMultiplySelf = function (other) {
-  this._values = multiply(this._values, other._values)
-  if (!other.is2D) this._is2D = false
-  return this
-}
-
-DOMMatrix.prototype.translate = function (tx, ty, tz) {
-  return newInstance(this._values).translateSelf(tx, ty, tz)
-}
-DOMMatrix.prototype.translateSelf = function (tx, ty, tz) {
-  if (typeof tx !== 'number') tx = 0
-  if (typeof ty !== 'number') ty = 0
-  if (typeof tz !== 'number') tz = 0
-  this._values = multiply([
-    1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    tx, ty, tz, 1
-  ], this._values)
-  if (tz !== 0) this._is2D = false
-  return this
-}
-
-DOMMatrix.prototype.scale = function (scaleX, scaleY, scaleZ, originX, originY, originZ) {
-  return newInstance(this._values).scaleSelf(scaleX, scaleY, scaleZ, originX, originY, originZ)
-}
-DOMMatrix.prototype.scale3d = function (scale, originX, originY, originZ) {
-  return newInstance(this._values).scale3dSelf(scale, originX, originY, originZ)
-}
-DOMMatrix.prototype.scale3dSelf = function (scale, originX, originY, originZ) {
-  return this.scaleSelf(scale, scale, scale, originX, originY, originZ)
-}
-DOMMatrix.prototype.scaleSelf = function (scaleX, scaleY, scaleZ, originX, originY, originZ) {
-  // Not redundant with translate's checks because we need to negate the values later.
-  if (typeof originX !== 'number') originX = 0
-  if (typeof originY !== 'number') originY = 0
-  if (typeof originZ !== 'number') originZ = 0
-  this.translateSelf(originX, originY, originZ)
-  if (typeof scaleX !== 'number') scaleX = 1
-  if (typeof scaleY !== 'number') scaleY = scaleX
-  if (typeof scaleZ !== 'number') scaleZ = 1
-  this._values = multiply([
-    scaleX, 0, 0, 0,
-    0, scaleY, 0, 0,
-    0, 0, scaleZ, 0,
-    0, 0, 0, 1
-  ], this._values)
-  this.translateSelf(-originX, -originY, -originZ)
-  if (scaleZ !== 1 || originZ !== 0) this._is2D = false
-  return this
-}
-
-DOMMatrix.prototype.rotateFromVector = function (x, y) {
-  return newInstance(this._values).rotateFromVectorSelf(x, y)
-}
-DOMMatrix.prototype.rotateFromVectorSelf = function (x, y) {
-  if (typeof x !== 'number') x = 0
-  if (typeof y !== 'number') y = 0
-  var theta = (x === 0 && y === 0) ? 0 : Math.atan2(y, x) * DEGREE_PER_RAD
-  return this.rotateSelf(theta)
-}
-DOMMatrix.prototype.rotate = function (rotX, rotY, rotZ) {
-  return newInstance(this._values).rotateSelf(rotX, rotY, rotZ)
-}
-DOMMatrix.prototype.rotateSelf = function (rotX, rotY, rotZ) {
-  if (rotY === undefined && rotZ === undefined) {
-    rotZ = rotX
-    rotX = rotY = 0
-  }
-  if (typeof rotY !== 'number') rotY = 0
-  if (typeof rotZ !== 'number') rotZ = 0
-  if (rotX !== 0 || rotY !== 0) this._is2D = false
-  rotX *= RAD_PER_DEGREE
-  rotY *= RAD_PER_DEGREE
-  rotZ *= RAD_PER_DEGREE
-  var c, s
-  c = Math.cos(rotZ)
-  s = Math.sin(rotZ)
-  this._values = multiply([
-    c, s, 0, 0,
-    -s, c, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ], this._values)
-  c = Math.cos(rotY)
-  s = Math.sin(rotY)
-  this._values = multiply([
-    c, 0, -s, 0,
-    0, 1, 0, 0,
-    s, 0, c, 0,
-    0, 0, 0, 1
-  ], this._values)
-  c = Math.cos(rotX)
-  s = Math.sin(rotX)
-  this._values = multiply([
-    1, 0, 0, 0,
-    0, c, s, 0,
-    0, -s, c, 0,
-    0, 0, 0, 1
-  ], this._values)
-  return this
-}
-
-DOMMatrix.prototype.rotateAxisAngle = function (x, y, z, angle) {
-  return newInstance(this._values).rotateAxisAngleSelf(x, y, z, angle)
-}
-DOMMatrix.prototype.rotateAxisAngleSelf = function (x, y, z, angle) {
-  if (typeof x !== 'number') x = 0
-  if (typeof y !== 'number') y = 0
-  if (typeof z !== 'number') z = 0
-  // Normalize axis
-  var length = Math.sqrt(x * x + y * y + z * z)
-  if (length === 0) return this
-  if (length !== 1) {
-    x /= length
-    y /= length
-    z /= length
-  }
-  angle *= RAD_PER_DEGREE
-  var c = Math.cos(angle)
-  var s = Math.sin(angle)
-  var t = 1 - c
-  var tx = t * x
-  var ty = t * y
-  // NB: This is the generic transform. If the axis is a major axis, there are
-  // faster transforms.
-  this._values = multiply([
-    tx * x + c,      tx * y + s * z,  tx * z - s * y,  0,
-    tx * y - s * z,  ty * y + c,      ty * z + s * x,  0,
-    tx * z + s * y,  ty * z - s * x,  t * z * z + c,   0,
-    0,               0,               0,               1
-  ], this._values)
-  if (x !== 0 || y !== 0) this._is2D = false
-  return this
-}
-
-DOMMatrix.prototype.skewX = function (sx) {
-  return newInstance(this._values).skewXSelf(sx)
-}
-DOMMatrix.prototype.skewXSelf = function (sx) {
-  if (typeof sx !== 'number') return this
-  var t = Math.tan(sx * RAD_PER_DEGREE)
-  this._values = multiply([
-    1, 0, 0, 0,
-    t, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ], this._values)
-  return this
-}
-
-DOMMatrix.prototype.skewY = function (sy) {
-  return newInstance(this._values).skewYSelf(sy)
-}
-DOMMatrix.prototype.skewYSelf = function (sy) {
-  if (typeof sy !== 'number') return this
-  var t = Math.tan(sy * RAD_PER_DEGREE)
-  this._values = multiply([
-    1, t, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ], this._values)
-  return this
-}
-
-DOMMatrix.prototype.flipX = function () {
-  return newInstance(multiply([
-    -1, 0, 0, 0,
-    0, 1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ], this._values))
-}
-DOMMatrix.prototype.flipY = function () {
-  return newInstance(multiply([
-    1, 0, 0, 0,
-    0, -1, 0, 0,
-    0, 0, 1, 0,
-    0, 0, 0, 1
-  ], this._values))
-}
-
-DOMMatrix.prototype.inverse = function () {
-  return newInstance(this._values).invertSelf()
-}
-DOMMatrix.prototype.invertSelf = function () {
-  var m = this._values;
-  var inv = m.map(v => 0);
-
-  inv[0] = m[5]  * m[10] * m[15] -
-          m[5]  * m[11] * m[14] -
-          m[9]  * m[6]  * m[15] +
-          m[9]  * m[7]  * m[14] +
-          m[13] * m[6]  * m[11] -
-          m[13] * m[7]  * m[10];
-
-  inv[4] = -m[4]  * m[10] * m[15] +
-          m[4]  * m[11] * m[14] +
-          m[8]  * m[6]  * m[15] -
-          m[8]  * m[7]  * m[14] -
-          m[12] * m[6]  * m[11] +
-          m[12] * m[7]  * m[10];
-
-  inv[8] = m[4]  * m[9] * m[15] -
-          m[4]  * m[11] * m[13] -
-          m[8]  * m[5] * m[15] +
-          m[8]  * m[7] * m[13] +
-          m[12] * m[5] * m[11] -
-          m[12] * m[7] * m[9];
-
-  inv[12] = -m[4]  * m[9] * m[14] +
-          m[4]  * m[10] * m[13] +
-          m[8]  * m[5] * m[14] -
-          m[8]  * m[6] * m[13] -
-          m[12] * m[5] * m[10] +
-          m[12] * m[6] * m[9];
-
-  // If the determinant is zero, this matrix cannot be inverted, and all
-  // values should be set to NaN, with the is2D flag set to false.
-
-  var det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
-
-  if (det === 0) {
-    this._values = m.map(v => NaN);
-    this._is2D = false;
-    return this;
-  }
-
-  inv[1] = -m[1]  * m[10] * m[15] +
-          m[1]  * m[11] * m[14] +
-          m[9]  * m[2] * m[15] -
-          m[9]  * m[3] * m[14] -
-          m[13] * m[2] * m[11] +
-          m[13] * m[3] * m[10];
-
-  inv[5] = m[0]  * m[10] * m[15] -
-          m[0]  * m[11] * m[14] -
-          m[8]  * m[2] * m[15] +
-          m[8]  * m[3] * m[14] +
-          m[12] * m[2] * m[11] -
-          m[12] * m[3] * m[10];
-
-  inv[9] = -m[0]  * m[9] * m[15] +
-          m[0]  * m[11] * m[13] +
-          m[8]  * m[1] * m[15] -
-          m[8]  * m[3] * m[13] -
-          m[12] * m[1] * m[11] +
-          m[12] * m[3] * m[9];
-
-  inv[13] = m[0]  * m[9] * m[14] -
-          m[0]  * m[10] * m[13] -
-          m[8]  * m[1] * m[14] +
-          m[8]  * m[2] * m[13] +
-          m[12] * m[1] * m[10] -
-          m[12] * m[2] * m[9];
-
-  inv[2] = m[1]  * m[6] * m[15] -
-          m[1]  * m[7] * m[14] -
-          m[5]  * m[2] * m[15] +
-          m[5]  * m[3] * m[14] +
-          m[13] * m[2] * m[7] -
-          m[13] * m[3] * m[6];
-
-  inv[6] = -m[0]  * m[6] * m[15] +
-          m[0]  * m[7] * m[14] +
-          m[4]  * m[2] * m[15] -
-          m[4]  * m[3] * m[14] -
-          m[12] * m[2] * m[7] +
-          m[12] * m[3] * m[6];
-
-  inv[10] = m[0]  * m[5] * m[15] -
-          m[0]  * m[7] * m[13] -
-          m[4]  * m[1] * m[15] +
-          m[4]  * m[3] * m[13] +
-          m[12] * m[1] * m[7] -
-          m[12] * m[3] * m[5];
-
-  inv[14] = -m[0]  * m[5] * m[14] +
-          m[0]  * m[6] * m[13] +
-          m[4]  * m[1] * m[14] -
-          m[4]  * m[2] * m[13] -
-          m[12] * m[1] * m[6] +
-          m[12] * m[2] * m[5];
-
-  inv[3] = -m[1] * m[6] * m[11] +
-          m[1] * m[7] * m[10] +
-          m[5] * m[2] * m[11] -
-          m[5] * m[3] * m[10] -
-          m[9] * m[2] * m[7] +
-          m[9] * m[3] * m[6];
-
-  inv[7] = m[0] * m[6] * m[11] -
-          m[0] * m[7] * m[10] -
-          m[4] * m[2] * m[11] +
-          m[4] * m[3] * m[10] +
-          m[8] * m[2] * m[7] -
-          m[8] * m[3] * m[6];
-
-  inv[11] = -m[0] * m[5] * m[11] +
-          m[0] * m[7] * m[9] +
-          m[4] * m[1] * m[11] -
-          m[4] * m[3] * m[9] -
-          m[8] * m[1] * m[7] +
-          m[8] * m[3] * m[5];
-
-  inv[15] = m[0] * m[5] * m[10] -
-          m[0] * m[6] * m[9] -
-          m[4] * m[1] * m[10] +
-          m[4] * m[2] * m[9] +
-          m[8] * m[1] * m[6] -
-          m[8] * m[2] * m[5];
-
-  inv.forEach((v,i) => inv[i] = v/det);
-  this._values = inv;
-  return this
-}
-
-DOMMatrix.prototype.setMatrixValue = function (transformList) {
-  var temp = new DOMMatrix(transformList)
-  this._values = temp._values
-  this._is2D = temp._is2D
-  return this
-}
-
-DOMMatrix.prototype.transformPoint = function (point) {
-  point = new DOMPoint(point)
-  var x = point.x
-  var y = point.y
-  var z = point.z
-  var w = point.w
-  var values = this._values
-  var nx = values[M11] * x + values[M21] * y + values[M31] * z + values[M41] * w
-  var ny = values[M12] * x + values[M22] * y + values[M32] * z + values[M42] * w
-  var nz = values[M13] * x + values[M23] * y + values[M33] * z + values[M43] * w
-  var nw = values[M14] * x + values[M24] * y + values[M34] * z + values[M44] * w
-  return new DOMPoint(nx, ny, nz, nw)
-}
-
-DOMMatrix.prototype.toFloat32Array = function () {
-  return Float32Array.from(this._values)
-}
-
-DOMMatrix.prototype.toFloat64Array = function () {
-  return this._values.slice(0)
-}
-
-module.exports = {DOMMatrix, DOMPoint}
+module.exports = { DOMMatrix, DOMPoint }
 
 
 /***/ }),
@@ -5067,8 +6195,132 @@ module.exports = {DOMMatrix, DOMPoint}
 "use strict";
 
 
-module.exports = __webpack_require__(737);
+const bindings = __webpack_require__(737)
 
+module.exports = bindings
+
+bindings.ImageData.prototype.toString = function () {
+	return '[object ImageData]'
+}
+
+bindings.CanvasGradient.prototype.toString = function () {
+	return '[object CanvasGradient]'
+}
+
+
+/***/ }),
+
+/***/ 498:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _crypto = _interopRequireDefault(__webpack_require__(373));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function sha1(bytes) {
+  if (Array.isArray(bytes)) {
+    bytes = Buffer.from(bytes);
+  } else if (typeof bytes === 'string') {
+    bytes = Buffer.from(bytes, 'utf8');
+  }
+
+  return _crypto.default.createHash('sha1').update(bytes).digest();
+}
+
+var _default = sha1;
+exports.default = _default;
+
+/***/ }),
+
+/***/ 503:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.OidcClient = void 0;
+const http_client_1 = __webpack_require__(425);
+const auth_1 = __webpack_require__(554);
+const core_1 = __webpack_require__(470);
+class OidcClient {
+    static createHttpClient(allowRetry = true, maxRetry = 10) {
+        const requestOptions = {
+            allowRetries: allowRetry,
+            maxRetries: maxRetry
+        };
+        return new http_client_1.HttpClient('actions/oidc-client', [new auth_1.BearerCredentialHandler(OidcClient.getRequestToken())], requestOptions);
+    }
+    static getRequestToken() {
+        const token = process.env['ACTIONS_ID_TOKEN_REQUEST_TOKEN'];
+        if (!token) {
+            throw new Error('Unable to get ACTIONS_ID_TOKEN_REQUEST_TOKEN env variable');
+        }
+        return token;
+    }
+    static getIDTokenUrl() {
+        const runtimeUrl = process.env['ACTIONS_ID_TOKEN_REQUEST_URL'];
+        if (!runtimeUrl) {
+            throw new Error('Unable to get ACTIONS_ID_TOKEN_REQUEST_URL env variable');
+        }
+        return runtimeUrl;
+    }
+    static getCall(id_token_url) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            const httpclient = OidcClient.createHttpClient();
+            const res = yield httpclient
+                .getJson(id_token_url)
+                .catch(error => {
+                throw new Error(`Failed to get ID Token. \n 
+        Error Code : ${error.statusCode}\n 
+        Error Message: ${error.result.message}`);
+            });
+            const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
+            if (!id_token) {
+                throw new Error('Response json body do not have ID Token field');
+            }
+            return id_token;
+        });
+    }
+    static getIDToken(audience) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // New ID Token is requested from action service
+                let id_token_url = OidcClient.getIDTokenUrl();
+                if (audience) {
+                    const encodedAudience = encodeURIComponent(audience);
+                    id_token_url = `${id_token_url}&audience=${encodedAudience}`;
+                }
+                core_1.debug(`ID token url is ${id_token_url}`);
+                const id_token = yield OidcClient.getCall(id_token_url);
+                core_1.setSecret(id_token);
+                return id_token;
+            }
+            catch (error) {
+                throw new Error(`Error message: ${error.message}`);
+            }
+        });
+    }
+}
+exports.OidcClient = OidcClient;
+//# sourceMappingURL=oidc-utils.js.map
 
 /***/ }),
 
@@ -5082,40 +6334,124 @@ module.exports = __webpack_require__(737);
  * Canvas - PDFStream
  */
 
-var Readable = __webpack_require__(413).Readable;
-var util = __webpack_require__(669);
+const { Readable } = __webpack_require__(413)
+function noop () {}
 
-var PDFStream = module.exports = function PDFStream(canvas, options) {
-  if (!(this instanceof PDFStream)) {
-    throw new TypeError("Class constructors cannot be invoked without 'new'");
+class PDFStream extends Readable {
+  constructor (canvas, options) {
+    super()
+
+    this.canvas = canvas
+    this.options = options
   }
 
-  Readable.call(this);
+  _read () {
+    // For now we're not controlling the c++ code's data emission, so we only
+    // call canvas.streamPDFSync once and let it emit data at will.
+    this._read = noop
 
-  this.canvas = canvas;
-  this.options = options;
+    this.canvas.streamPDFSync((err, chunk, len) => {
+      if (err) {
+        this.emit('error', err)
+      } else if (len) {
+        this.push(chunk)
+      } else {
+        this.push(null)
+      }
+    }, this.options)
+  }
+}
+
+module.exports = PDFStream
+
+
+/***/ }),
+
+/***/ 554:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-
-util.inherits(PDFStream, Readable);
-
-function noop() {}
-
-PDFStream.prototype._read = function _read() {
-  // For now we're not controlling the c++ code's data emission, so we only
-  // call canvas.streamPDFSync once and let it emit data at will.
-  this._read = noop;
-  var self = this;
-  self.canvas.streamPDFSync(function(err, chunk, len){
-    if (err) {
-      self.emit('error', err);
-    } else if (len) {
-      self.push(chunk);
-    } else {
-      self.push(null);
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PersonalAccessTokenCredentialHandler = exports.BearerCredentialHandler = exports.BasicCredentialHandler = void 0;
+class BasicCredentialHandler {
+    constructor(username, password) {
+        this.username = username;
+        this.password = password;
     }
-  }, this.options);
-};
-
+    prepareRequest(options) {
+        if (!options.headers) {
+            throw Error('The request has no headers');
+        }
+        options.headers['Authorization'] = `Basic ${Buffer.from(`${this.username}:${this.password}`).toString('base64')}`;
+    }
+    // This handler cannot handle 401
+    canHandleAuthentication() {
+        return false;
+    }
+    handleAuthentication() {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw new Error('not implemented');
+        });
+    }
+}
+exports.BasicCredentialHandler = BasicCredentialHandler;
+class BearerCredentialHandler {
+    constructor(token) {
+        this.token = token;
+    }
+    // currently implements pre-authorization
+    // TODO: support preAuth = false where it hooks on 401
+    prepareRequest(options) {
+        if (!options.headers) {
+            throw Error('The request has no headers');
+        }
+        options.headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    // This handler cannot handle 401
+    canHandleAuthentication() {
+        return false;
+    }
+    handleAuthentication() {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw new Error('not implemented');
+        });
+    }
+}
+exports.BearerCredentialHandler = BearerCredentialHandler;
+class PersonalAccessTokenCredentialHandler {
+    constructor(token) {
+        this.token = token;
+    }
+    // currently implements pre-authorization
+    // TODO: support preAuth = false where it hooks on 401
+    prepareRequest(options) {
+        if (!options.headers) {
+            throw Error('The request has no headers');
+        }
+        options.headers['Authorization'] = `Basic ${Buffer.from(`PAT:${this.token}`).toString('base64')}`;
+    }
+    // This handler cannot handle 401
+    canHandleAuthentication() {
+        return false;
+    }
+    handleAuthentication() {
+        return __awaiter(this, void 0, void 0, function* () {
+            throw new Error('not implemented');
+        });
+    }
+}
+exports.PersonalAccessTokenCredentialHandler = PersonalAccessTokenCredentialHandler;
+//# sourceMappingURL=auth.js.map
 
 /***/ }),
 
@@ -5167,6 +6503,102 @@ YAMLException.prototype.toString = function toString(compact) {
 
 module.exports = YAMLException;
 
+
+/***/ }),
+
+/***/ 571:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = rng;
+
+var _crypto = _interopRequireDefault(__webpack_require__(373));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+const rnds8Pool = new Uint8Array(256); // # of random values to pre-allocate
+
+let poolPtr = rnds8Pool.length;
+
+function rng() {
+  if (poolPtr > rnds8Pool.length - 16) {
+    _crypto.default.randomFillSync(rnds8Pool);
+
+    poolPtr = 0;
+  }
+
+  return rnds8Pool.slice(poolPtr, poolPtr += 16);
+}
+
+/***/ }),
+
+/***/ 573:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.toPlatformPath = exports.toWin32Path = exports.toPosixPath = void 0;
+const path = __importStar(__webpack_require__(622));
+/**
+ * toPosixPath converts the given path to the posix form. On Windows, \\ will be
+ * replaced with /.
+ *
+ * @param pth. Path to transform.
+ * @return string Posix path.
+ */
+function toPosixPath(pth) {
+    return pth.replace(/[\\]/g, '/');
+}
+exports.toPosixPath = toPosixPath;
+/**
+ * toWin32Path converts the given path to the win32 form. On Linux, / will be
+ * replaced with \\.
+ *
+ * @param pth. Path to transform.
+ * @return string Win32 path.
+ */
+function toWin32Path(pth) {
+    return pth.replace(/[/]/g, '\\');
+}
+exports.toWin32Path = toWin32Path;
+/**
+ * toPlatformPath converts the given path to a platform-specific path. It does
+ * this by replacing instances of / and \ with the platform-specific path
+ * separator.
+ *
+ * @param pth The path to platformize.
+ * @return string The platform-specific path.
+ */
+function toPlatformPath(pth) {
+    return pth.replace(/[/\\]/g, path.sep);
+}
+exports.toPlatformPath = toPlatformPath;
+//# sourceMappingURL=path-utils.js.map
 
 /***/ }),
 
@@ -5326,6 +6758,131 @@ module.exports = new Schema({
 
 /***/ }),
 
+/***/ 614:
+/***/ (function(module) {
+
+module.exports = require("events");
+
+/***/ }),
+
+/***/ 617:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+const { logger } = __webpack_require__(979);
+
+function getBaseBranch(
+  projectTriggeringTheJob,
+  projectTriggeringTheJobMapping,
+  currentProject,
+  currentProjectMapping,
+  expectedBaseBranch
+) {
+  const result = getBaseMappingInfo(
+    projectTriggeringTheJob,
+    projectTriggeringTheJobMapping,
+    currentProject,
+    currentProjectMapping,
+    expectedBaseBranch
+  );
+  return result ? result.target : expectedBaseBranch;
+}
+
+function getBaseMappingInfo(
+  projectTriggeringTheJob,
+  projectTriggeringTheJobMapping,
+  currentProject,
+  currentProjectMapping,
+  expectedBaseBranch
+) {
+  // If the current project it the project triggering the job there's no mapping
+
+  if (currentProject !== projectTriggeringTheJob) {
+    // If the current project has been excluded from the mapping, there's no mapping
+    if (
+      projectTriggeringTheJobMapping &&
+      (projectTriggeringTheJobMapping.exclude
+        ? !projectTriggeringTheJobMapping.exclude.includes(currentProject)
+        : true)
+    ) {
+      // The mapping is either taken from the project mapping or from the default one
+      const mapping =
+        getMappingInfo(
+          currentProject,
+          projectTriggeringTheJobMapping.dependencies[currentProject],
+          expectedBaseBranch
+        ) ||
+        getMappingInfo(
+          currentProject,
+          projectTriggeringTheJobMapping.dependencies.default,
+          expectedBaseBranch
+        );
+      if (mapping) {
+        return mapping;
+      }
+      // If the current project has a mapping and the source matched with the targetBranch then this mapping is taken
+    }
+    if (
+      currentProjectMapping &&
+      currentProjectMapping.dependant &&
+      (currentProjectMapping.exclude
+        ? !currentProjectMapping.exclude.includes(projectTriggeringTheJob)
+        : true)
+    ) {
+      const mapping =
+        getMappingInfo(
+          currentProject,
+          currentProjectMapping.dependant[projectTriggeringTheJob],
+          expectedBaseBranch
+        ) ||
+        getMappingInfo(
+          currentProject,
+          currentProjectMapping.dependant.default,
+          expectedBaseBranch
+        );
+      if (mapping) {
+        return mapping;
+      }
+    }
+  }
+  return undefined;
+}
+
+function getMappingInfo(currentProject, mapping, sourceBranch) {
+  const excludeFilter = (exclude, project) =>
+    [null, undefined, []].includes(exclude) || !exclude.includes(project);
+  if (mapping) {
+    // The exact match has precedence over the regex
+    const foundMappingEqual = mapping
+      .filter(e => excludeFilter(e.exclude, currentProject))
+      .filter(e => e.source === sourceBranch);
+    const foundMappingRegex = mapping
+      .filter(e => excludeFilter(e.exclude, currentProject))
+      .filter(e => sourceBranch.match(new RegExp(`^${e.source}$`)));
+    const foundMapping =
+      foundMappingEqual && foundMappingEqual.length
+        ? foundMappingEqual
+        : foundMappingRegex;
+    if (foundMapping.length) {
+      const found = foundMapping[0];
+      if (foundMapping.length > 1) {
+        logger.warn(
+          `The mapping for ${currentProject} has a duplication for source branch ${sourceBranch}. First matching ${found.target} will be used.`
+        );
+      }
+      return found;
+    }
+  }
+  return undefined;
+}
+
+module.exports = {
+  getBaseBranch,
+  getBaseMappingInfo
+};
+
+
+/***/ }),
+
 /***/ 622:
 /***/ (function(module) {
 
@@ -5398,6 +6955,13 @@ module.exports = new Type('tag:yaml.org,2002:js/regexp', {
   represent: representJavascriptRegExp
 });
 
+
+/***/ }),
+
+/***/ 631:
+/***/ (function(module) {
+
+module.exports = require("net");
 
 /***/ }),
 
@@ -5540,6 +7104,296 @@ if (require.main === require.cache[eval('__filename')]) {
 
 module.exports = { main };
 
+
+/***/ }),
+
+/***/ 665:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.summary = exports.markdownSummary = exports.SUMMARY_DOCS_URL = exports.SUMMARY_ENV_VAR = void 0;
+const os_1 = __webpack_require__(87);
+const fs_1 = __webpack_require__(747);
+const { access, appendFile, writeFile } = fs_1.promises;
+exports.SUMMARY_ENV_VAR = 'GITHUB_STEP_SUMMARY';
+exports.SUMMARY_DOCS_URL = 'https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary';
+class Summary {
+    constructor() {
+        this._buffer = '';
+    }
+    /**
+     * Finds the summary file path from the environment, rejects if env var is not found or file does not exist
+     * Also checks r/w permissions.
+     *
+     * @returns step summary file path
+     */
+    filePath() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._filePath) {
+                return this._filePath;
+            }
+            const pathFromEnv = process.env[exports.SUMMARY_ENV_VAR];
+            if (!pathFromEnv) {
+                throw new Error(`Unable to find environment variable for $${exports.SUMMARY_ENV_VAR}. Check if your runtime environment supports job summaries.`);
+            }
+            try {
+                yield access(pathFromEnv, fs_1.constants.R_OK | fs_1.constants.W_OK);
+            }
+            catch (_a) {
+                throw new Error(`Unable to access summary file: '${pathFromEnv}'. Check if the file has correct read/write permissions.`);
+            }
+            this._filePath = pathFromEnv;
+            return this._filePath;
+        });
+    }
+    /**
+     * Wraps content in an HTML tag, adding any HTML attributes
+     *
+     * @param {string} tag HTML tag to wrap
+     * @param {string | null} content content within the tag
+     * @param {[attribute: string]: string} attrs key-value list of HTML attributes to add
+     *
+     * @returns {string} content wrapped in HTML element
+     */
+    wrap(tag, content, attrs = {}) {
+        const htmlAttrs = Object.entries(attrs)
+            .map(([key, value]) => ` ${key}="${value}"`)
+            .join('');
+        if (!content) {
+            return `<${tag}${htmlAttrs}>`;
+        }
+        return `<${tag}${htmlAttrs}>${content}</${tag}>`;
+    }
+    /**
+     * Writes text in the buffer to the summary buffer file and empties buffer. Will append by default.
+     *
+     * @param {SummaryWriteOptions} [options] (optional) options for write operation
+     *
+     * @returns {Promise<Summary>} summary instance
+     */
+    write(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const overwrite = !!(options === null || options === void 0 ? void 0 : options.overwrite);
+            const filePath = yield this.filePath();
+            const writeFunc = overwrite ? writeFile : appendFile;
+            yield writeFunc(filePath, this._buffer, { encoding: 'utf8' });
+            return this.emptyBuffer();
+        });
+    }
+    /**
+     * Clears the summary buffer and wipes the summary file
+     *
+     * @returns {Summary} summary instance
+     */
+    clear() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.emptyBuffer().write({ overwrite: true });
+        });
+    }
+    /**
+     * Returns the current summary buffer as a string
+     *
+     * @returns {string} string of summary buffer
+     */
+    stringify() {
+        return this._buffer;
+    }
+    /**
+     * If the summary buffer is empty
+     *
+     * @returns {boolen} true if the buffer is empty
+     */
+    isEmptyBuffer() {
+        return this._buffer.length === 0;
+    }
+    /**
+     * Resets the summary buffer without writing to summary file
+     *
+     * @returns {Summary} summary instance
+     */
+    emptyBuffer() {
+        this._buffer = '';
+        return this;
+    }
+    /**
+     * Adds raw text to the summary buffer
+     *
+     * @param {string} text content to add
+     * @param {boolean} [addEOL=false] (optional) append an EOL to the raw text (default: false)
+     *
+     * @returns {Summary} summary instance
+     */
+    addRaw(text, addEOL = false) {
+        this._buffer += text;
+        return addEOL ? this.addEOL() : this;
+    }
+    /**
+     * Adds the operating system-specific end-of-line marker to the buffer
+     *
+     * @returns {Summary} summary instance
+     */
+    addEOL() {
+        return this.addRaw(os_1.EOL);
+    }
+    /**
+     * Adds an HTML codeblock to the summary buffer
+     *
+     * @param {string} code content to render within fenced code block
+     * @param {string} lang (optional) language to syntax highlight code
+     *
+     * @returns {Summary} summary instance
+     */
+    addCodeBlock(code, lang) {
+        const attrs = Object.assign({}, (lang && { lang }));
+        const element = this.wrap('pre', this.wrap('code', code), attrs);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML list to the summary buffer
+     *
+     * @param {string[]} items list of items to render
+     * @param {boolean} [ordered=false] (optional) if the rendered list should be ordered or not (default: false)
+     *
+     * @returns {Summary} summary instance
+     */
+    addList(items, ordered = false) {
+        const tag = ordered ? 'ol' : 'ul';
+        const listItems = items.map(item => this.wrap('li', item)).join('');
+        const element = this.wrap(tag, listItems);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML table to the summary buffer
+     *
+     * @param {SummaryTableCell[]} rows table rows
+     *
+     * @returns {Summary} summary instance
+     */
+    addTable(rows) {
+        const tableBody = rows
+            .map(row => {
+            const cells = row
+                .map(cell => {
+                if (typeof cell === 'string') {
+                    return this.wrap('td', cell);
+                }
+                const { header, data, colspan, rowspan } = cell;
+                const tag = header ? 'th' : 'td';
+                const attrs = Object.assign(Object.assign({}, (colspan && { colspan })), (rowspan && { rowspan }));
+                return this.wrap(tag, data, attrs);
+            })
+                .join('');
+            return this.wrap('tr', cells);
+        })
+            .join('');
+        const element = this.wrap('table', tableBody);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds a collapsable HTML details element to the summary buffer
+     *
+     * @param {string} label text for the closed state
+     * @param {string} content collapsable content
+     *
+     * @returns {Summary} summary instance
+     */
+    addDetails(label, content) {
+        const element = this.wrap('details', this.wrap('summary', label) + content);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML image tag to the summary buffer
+     *
+     * @param {string} src path to the image you to embed
+     * @param {string} alt text description of the image
+     * @param {SummaryImageOptions} options (optional) addition image attributes
+     *
+     * @returns {Summary} summary instance
+     */
+    addImage(src, alt, options) {
+        const { width, height } = options || {};
+        const attrs = Object.assign(Object.assign({}, (width && { width })), (height && { height }));
+        const element = this.wrap('img', null, Object.assign({ src, alt }, attrs));
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML section heading element
+     *
+     * @param {string} text heading text
+     * @param {number | string} [level=1] (optional) the heading level, default: 1
+     *
+     * @returns {Summary} summary instance
+     */
+    addHeading(text, level) {
+        const tag = `h${level}`;
+        const allowedTag = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)
+            ? tag
+            : 'h1';
+        const element = this.wrap(allowedTag, text);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML thematic break (<hr>) to the summary buffer
+     *
+     * @returns {Summary} summary instance
+     */
+    addSeparator() {
+        const element = this.wrap('hr', null);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML line break (<br>) to the summary buffer
+     *
+     * @returns {Summary} summary instance
+     */
+    addBreak() {
+        const element = this.wrap('br', null);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML blockquote to the summary buffer
+     *
+     * @param {string} text quote text
+     * @param {string} cite (optional) citation url
+     *
+     * @returns {Summary} summary instance
+     */
+    addQuote(text, cite) {
+        const attrs = Object.assign({}, (cite && { cite }));
+        const element = this.wrap('blockquote', text, attrs);
+        return this.addRaw(element).addEOL();
+    }
+    /**
+     * Adds an HTML anchor tag to the summary buffer
+     *
+     * @param {string} text link text/content
+     * @param {string} href hyperlink
+     *
+     * @returns {Summary} summary instance
+     */
+    addLink(text, href) {
+        const element = this.wrap('a', text, { href });
+        return this.addRaw(element).addEOL();
+    }
+}
+const _summary = new Summary();
+/**
+ * @deprecated use `core.summary`
+ */
+exports.markdownSummary = _summary;
+exports.summary = _summary;
+//# sourceMappingURL=summary.js.map
 
 /***/ }),
 
@@ -6429,6 +8283,34 @@ module.exports.safeDump = safeDump;
 
 /***/ }),
 
+/***/ 695:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _validate = _interopRequireDefault(__webpack_require__(78));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function version(uuid) {
+  if (!(0, _validate.default)(uuid)) {
+    throw TypeError('Invalid UUID');
+  }
+
+  return parseInt(uuid.substr(14, 1), 16);
+}
+
+var _default = version;
+exports.default = _default;
+
+/***/ }),
+
 /***/ 723:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -6471,7 +8353,7 @@ module.exports = new Schema({
 module.exports = simpleGet
 
 const concat = __webpack_require__(80)
-const decompressResponse = __webpack_require__(72) // excluded from browser build
+const decompressResponse = __webpack_require__(861) // excluded from browser build
 const http = __webpack_require__(605)
 const https = __webpack_require__(211)
 const once = __webpack_require__(49)
@@ -6513,12 +8395,20 @@ function simpleGet (opts, cb) {
   if (opts.json) opts.headers.accept = 'application/json'
   if (opts.method) opts.method = opts.method.toUpperCase()
 
+  const originalHost = opts.hostname // hostname before potential redirect
   const protocol = opts.protocol === 'https:' ? https : http // Support http/https urls
   const req = protocol.request(opts, res => {
     if (opts.followRedirects !== false && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
       opts.url = res.headers.location // Follow 3xx redirects
       delete opts.headers.host // Discard `host` header on redirect (see #32)
       res.resume() // Discard response
+
+      const redirectHost = url.parse(opts.url).hostname // eslint-disable-line node/no-deprecated-api
+      // If redirected host is different than original host, drop headers to prevent cookie leak (#73)
+      if (redirectHost !== null && redirectHost !== originalHost) {
+        delete opts.headers.cookie
+        delete opts.headers.authorization
+      }
 
       if (opts.method === 'POST' && [301, 302].includes(res.statusCode)) {
         opts.method = 'GET' // On 301/302 redirect, change POST to GET (see #35)
@@ -6568,6 +8458,50 @@ simpleGet.concat = (opts, cb) => {
   }
 })
 
+
+/***/ }),
+
+/***/ 733:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _rng = _interopRequireDefault(__webpack_require__(571));
+
+var _stringify = _interopRequireDefault(__webpack_require__(411));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function v4(options, buf, offset) {
+  options = options || {};
+
+  const rnds = options.random || (options.rng || _rng.default)(); // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
+
+
+  rnds[6] = rnds[6] & 0x0f | 0x40;
+  rnds[8] = rnds[8] & 0x3f | 0x80; // Copy bytes to buffer, if provided
+
+  if (buf) {
+    offset = offset || 0;
+
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = rnds[i];
+    }
+
+    return buf;
+  }
+
+  return (0, _stringify.default)(rnds);
+}
+
+var _default = v4;
+exports.default = _default;
 
 /***/ }),
 
@@ -6641,6 +8575,31 @@ module.exports.toArray        = toArray;
 module.exports.repeat         = repeat;
 module.exports.isNegativeZero = isNegativeZero;
 module.exports.extend         = extend;
+
+
+/***/ }),
+
+/***/ 742:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+
+/*!
+ * Canvas - CanvasPattern
+ * Copyright (c) 2010 LearnBoost <tj@learnboost.com>
+ * MIT Licensed
+ */
+
+const bindings = __webpack_require__(495)
+const { DOMMatrix } = __webpack_require__(476)
+
+bindings.CanvasPatternInit(DOMMatrix)
+module.exports = bindings.CanvasPattern
+
+bindings.CanvasPattern.prototype.toString = function () {
+	return '[object CanvasPattern]'
+}
 
 
 /***/ }),
@@ -6735,6 +8694,7 @@ module.exports = require("process");
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
 const fs = __webpack_require__(747);
+const path = __webpack_require__(622);
 
 const { getUrlContent } = __webpack_require__(593);
 const { treatUrl, treatMapping } = __webpack_require__(824);
@@ -6756,7 +8716,7 @@ async function readDefinitionFile(
 ) {
   return file.startsWith("http")
     ? readDefinitionFileFromUrl(file, options)
-    : readDefinitionFileFromFile(file, options.urlPlaceHolders);
+    : readDefinitionFileFromFile(file, options);
 }
 
 /**
@@ -6787,6 +8747,7 @@ async function readDefinitionFileFromUrl(
   options = { urlPlaceHolders: {}, token: undefined }
 ) {
   const treatedUrl = treatUrl(url, options.urlPlaceHolders);
+
   return loadYaml(
     readYaml(await getUrlContent(treatedUrl, options.token)),
     "./",
@@ -6809,18 +8770,49 @@ async function loadYaml(
   options = { urlPlaceHolders: {}, token: undefined }
 ) {
   validateDefinition(definitionYaml);
+  let extendedDefinitionFile;
+  if (definitionYaml.extends) {
+    const extendedDefinitionFileLocation = constructLocation(
+      definitionYaml.extends,
+      containerPath,
+      definitionFileFolder,
+      options
+    );
+    extendedDefinitionFile = await readDefinitionFile(
+      extendedDefinitionFileLocation,
+      options
+    );
+    delete definitionYaml["extends"];
+  }
+  definitionYaml.pre = extendPrePost(
+    definitionYaml.pre,
+    extendedDefinitionFile ? extendedDefinitionFile.pre : undefined
+  );
+  definitionYaml.post = extendPrePost(
+    definitionYaml.post,
+    extendedDefinitionFile ? extendedDefinitionFile.post : undefined
+  );
+  definitionYaml.default = extendDefault(
+    definitionYaml.default,
+    extendedDefinitionFile ? extendedDefinitionFile.default : undefined
+  );
+  definitionYaml.build = extendBuild(
+    definitionYaml.build,
+    extendedDefinitionFile ? extendedDefinitionFile.build : undefined
+  );
   definitionYaml.dependencies = await loadDependencies(
     definitionYaml.dependencies,
+    extendedDefinitionFile ? extendedDefinitionFile.dependencies : undefined,
     definitionFileFolder,
     containerPath,
     options
   );
-  if (definitionYaml.dependencies) {
-    definitionYaml.dependencies
-      .filter(dependency => dependency.mapping)
-      .map(dependency => dependency.mapping)
-      .forEach(mapping => treatMapping(mapping));
-  }
+
+  definitionYaml.dependencies
+    .filter(dependency => dependency.mapping)
+    .map(dependency => dependency.mapping)
+    .forEach(mapping => treatMapping(mapping));
+
   return definitionYaml;
 }
 
@@ -6833,61 +8825,145 @@ async function loadYaml(
  */
 async function loadDependencies(
   dependencies,
+  extendedDependencies,
   definitionFileFolder,
   containerPath,
   options = { urlPlaceHolders: {}, token: undefined }
 ) {
-  let dependenciesFinalPath = dependencies;
-  if (dependencies) {
-    if (
-      containerPath.startsWith("http") &&
-      !Array.isArray(dependencies) &&
-      !dependencies.startsWith("http")
-    ) {
-      const treatedUrl = treatUrl(containerPath, options.urlPlaceHolders);
-      dependenciesFinalPath = `${treatedUrl.substring(
-        0,
-        treatedUrl.lastIndexOf("/")
-      )}/${dependencies}`;
-      const dependenciesContent = await getUrlContent(
-        dependenciesFinalPath,
-        options.token
-      );
-      fs.writeFileSync(dependencies, dependenciesContent);
-    }
+  let loadedDependencies = dependencies ? dependencies : [];
 
-    if (!Array.isArray(dependencies)) {
-      const dependenciesFilePath = dependencies.startsWith("http")
-        ? treatUrl(dependencies, options.urlPlaceHolders)
-        : `${definitionFileFolder}/${dependencies}`;
-      const dependenciesFileContent = dependencies.startsWith("http")
-        ? await getUrlContent(dependenciesFilePath, options.token)
-        : fs.readFileSync(dependenciesFilePath, "utf8");
-      const dependenciesYaml = readYaml(dependenciesFileContent);
-      validateDependencies(dependenciesYaml);
-      // Once the dependencies are loaded, the `extends` proporty is concatenated to the current dependencies
-      return (
-        await loadDependencies(
-          dependenciesYaml.extends,
-          dependenciesFilePath.substring(
-            0,
-            dependenciesFilePath.lastIndexOf("/")
-          ),
-          dependenciesFinalPath,
-          options
-        )
-      ).concat(dependenciesYaml.dependencies);
-    } else {
-      // There's no extension for embedded dependencies
-      return dependencies;
+  // if dependencies weren't embedded then load it from file or url
+  if (!Array.isArray(loadedDependencies)) {
+    let dependenciesLocation = constructLocation(
+      dependencies,
+      containerPath,
+      definitionFileFolder,
+      options
+    );
+    const dependenciesYaml = await readDefinitionFile(
+      dependenciesLocation,
+      options
+    );
+    validateDependencies(dependenciesYaml);
+    loadedDependencies = dependenciesYaml.dependencies;
+  }
+
+  // extend loaded dependencies if needed
+  return extendedDependencies
+    ? extendedDependencies.concat(loadedDependencies)
+    : loadedDependencies;
+}
+
+function extendBuild(current, extendWith) {
+  if (!extendWith) {
+    return current;
+  }
+
+  if (!current) {
+    return extendWith;
+  }
+
+  const copyCurrent = [...current];
+
+  extendWith.map(parent => {
+    // only add if it doesn't exist in the current build. current build overrides parent
+    if (!current.find(current => current.project === parent.project)) {
+      copyCurrent.push(parent);
     }
+  });
+
+  return copyCurrent;
+}
+
+function extendDefault(current, extendWith) {
+  if (!extendWith) {
+    return current;
+  }
+
+  if (!current) {
+    return extendWith;
+  }
+
+  const copyCurrent = { ...current };
+  const currentKeys = Object.keys(current);
+
+  Object.entries(extendWith).forEach(([key, value]) => {
+    if (typeof value === "object") {
+      // if current as the key then merge the 2 objects otherwise use the object from extended
+      copyCurrent[key] = currentKeys.includes(key)
+        ? extendDefault(current[key], value)
+        : value;
+    } else {
+      // override extended definition file's value with the current one
+      copyCurrent[key] = current[key] ? current[key] : value;
+    }
+  });
+  return copyCurrent;
+}
+
+function extendPrePost(current, extendWith) {
+  if (!extendWith) {
+    return current;
+  }
+
+  if (!current) {
+    return extendWith;
+  }
+
+  return `${current}\n${extendWith}`;
+}
+
+function constructLocation(location, containerPath, parentDir, options) {
+  if (location.startsWith("http")) {
+    return treatUrl(location, options.urlPlaceHolders);
+  }
+  // if location is a file path and container path was a url
+  else if (containerPath.startsWith("http")) {
+    const treatedContainerUrl = treatUrl(
+      containerPath,
+      options.urlPlaceHolders
+    );
+    return `${treatedContainerUrl.substring(
+      0,
+      treatedContainerUrl.lastIndexOf("/")
+    )}/${location}`;
   } else {
-    return [];
+    return path.join(parentDir, location);
   }
 }
 
 module.exports = { readDefinitionFile };
 
+
+/***/ }),
+
+/***/ 803:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _crypto = _interopRequireDefault(__webpack_require__(373));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function md5(bytes) {
+  if (Array.isArray(bytes)) {
+    bytes = Buffer.from(bytes);
+  } else if (typeof bytes === 'string') {
+    bytes = Buffer.from(bytes, 'utf8');
+  }
+
+  return _crypto.default.createHash('md5').update(bytes).digest();
+}
+
+var _default = md5;
+exports.default = _default;
 
 /***/ }),
 
@@ -6912,9 +8988,9 @@ const Image = module.exports = bindings.Image
 const util = __webpack_require__(669)
 
 // Lazily loaded simple-get
-let get;
+let get
 
-const {GetSource, SetSource} = bindings;
+const { GetSource, SetSource } = bindings
 
 Object.defineProperty(Image.prototype, 'src', {
   /**
@@ -6927,14 +9003,14 @@ Object.defineProperty(Image.prototype, 'src', {
    * @param {String|Buffer} val filename, buffer, data URI, URL
    * @api public
    */
-  set(val) {
+  set (val) {
     if (typeof val === 'string') {
       if (/^\s*data:/.test(val)) { // data: URI
         const commaI = val.indexOf(',')
         // 'base64' must come before the comma
         const isBase64 = val.lastIndexOf('base64', commaI) !== -1
         const content = val.slice(commaI + 1)
-        setSource(this, Buffer.from(content, isBase64 ? 'base64' : 'utf8'), val);
+        setSource(this, Buffer.from(content, isBase64 ? 'base64' : 'utf8'), val)
       } else if (/^\s*https?:\/\//.test(val)) { // remote URL
         const onerror = err => {
           if (typeof this.onerror === 'function') {
@@ -6944,9 +9020,12 @@ Object.defineProperty(Image.prototype, 'src', {
           }
         }
 
-        if (!get) get = __webpack_require__(732);
+        if (!get) get = __webpack_require__(732)
 
-        get.concat(val, (err, res, data) => {
+        get.concat({
+          url: val,
+          headers: { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36' }
+        }, (err, res, data) => {
           if (err) return onerror(err)
 
           if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -6956,37 +9035,37 @@ Object.defineProperty(Image.prototype, 'src', {
           setSource(this, data)
         })
       } else { // local file path assumed
-        setSource(this, val);
+        setSource(this, val)
       }
     } else if (Buffer.isBuffer(val)) {
-      setSource(this, val);
+      setSource(this, val)
     }
   },
 
-  get() {
+  get () {
     // TODO https://github.com/Automattic/node-canvas/issues/118
-    return getSource(this);
+    return getSource(this)
   },
 
   configurable: true
-});
+})
 
 // TODO || is for Node.js pre-v6.6.0
-Image.prototype[util.inspect.custom || 'inspect'] = function(){
-  return '[Image'
-    + (this.complete ? ':' + this.width + 'x' + this.height : '')
-    + (this.src ? ' ' + this.src : '')
-    + (this.complete ? ' complete' : '')
-    + ']';
-};
-
-function getSource(img){
-  return img._originalSource || GetSource.call(img);
+Image.prototype[util.inspect.custom || 'inspect'] = function () {
+  return '[Image' +
+    (this.complete ? ':' + this.width + 'x' + this.height : '') +
+    (this.src ? ' ' + this.src : '') +
+    (this.complete ? ' complete' : '') +
+    ']'
 }
 
-function setSource(img, src, origSrc){
-  SetSource.call(img, src);
-  img._originalSource = origSrc;
+function getSource (img) {
+  return img._originalSource || GetSource.call(img)
+}
+
+function setSource (img, src, origSrc) {
+  SetSource.call(img, src)
+  img._originalSource = origSrc
 }
 
 
@@ -7035,21 +9114,56 @@ module.exports = new Type('tag:yaml.org,2002:null', {
 /***/ }),
 
 /***/ 824:
-/***/ (function(module) {
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+const { logger } = __webpack_require__(979);
+
+/**
+ * Treats the url containing a expression between `%{` and `}` (without quotes)
+ * @param {String} url with expressions
+ */
+function executeUrlExpressions(url) {
+  let result = url;
+  const expression = /%{([^%]+)}/g;
+  let match;
+  while ((match = expression.exec(url))) {
+    logger.info(`Expression found in URL ${result}.`);
+    logger.info(`Expression: ${match[1]}.`);
+
+    try {
+      const expressionEvalResult = eval(match[1]);
+      logger.info(`Expression Result: ${expressionEvalResult}.`);
+      result = result.replace(`%{${match[1]}}`, expressionEvalResult);
+      logger.emptyLine();
+    } catch (ex) {
+      logger.error(
+        `Error evaluating expression \`${match[1]}\` for url: \`${result}\``,
+        ex
+      );
+      throw ex;
+    }
+  }
+  return result;
+}
 
 /**
  * it treats the url in case it contains
- * @param {String} url a http(s)://whatever.domain/${GROUP}/${PROJECT_NAME}/${BRANCH}/whateverfile.txt format, where place olders are optional and can be placed anywhere on the string
+ * @param {String} url a http(s)://whatever.domain/${GROUP}/${PROJECT_NAME}/${BRANCH}/whateverfile.txt format, where place olders are optional and can be placed anywhere on the string. They also can have default values.
  * @param {Object} placeHolders the key/values to replace url's place holders
  */
 function treatUrl(url, placeHolders) {
   let result = url;
   if (placeHolders) {
     Object.entries(placeHolders).forEach(
-      ([key, value]) => (result = result.replace(`$\{${key}}`, value))
+      ([key, value]) =>
+        (result = result.replace(
+          new RegExp(`\\$\\{${key}(:[^}]+)?}`, "gi"),
+          value
+        ))
     );
   }
-  return result;
+
+  return executeUrlExpressions(result);
 }
 
 function treatMapping(mapping) {
@@ -7067,7 +9181,7 @@ function treatMappingDependencies(mappingDependencies) {
         try {
           mapping.target = eval(mapping.targetExpression);
         } catch (ex) {
-          console.error(
+          logger.error(
             `Error evaluating expression \`${mapping.targetExpression}\` for source: \`${mapping.source}\``,
             ex
           );
@@ -7077,7 +9191,7 @@ function treatMappingDependencies(mappingDependencies) {
   );
 }
 
-module.exports = { treatUrl, treatMapping };
+module.exports = { treatUrl, treatMapping, executeUrlExpressions };
 
 
 /***/ }),
@@ -7285,30 +9399,30 @@ Canvas.prototype[util.inspect.custom || 'inspect'] = function () {
 }
 
 Canvas.prototype.getContext = function (contextType, contextAttributes) {
-  if ('2d' == contextType) {
-    var ctx = this._context2d || (this._context2d = new Context2d(this, contextAttributes));
-    this.context = ctx;
-    ctx.canvas = this;
-    return ctx;
+  if (contextType == '2d') {
+    const ctx = this._context2d || (this._context2d = new Context2d(this, contextAttributes))
+    this.context = ctx
+    ctx.canvas = this
+    return ctx
   }
-};
+}
 
 Canvas.prototype.pngStream =
-Canvas.prototype.createPNGStream = function(options){
-  return new PNGStream(this, options);
-};
+Canvas.prototype.createPNGStream = function (options) {
+  return new PNGStream(this, options)
+}
 
 Canvas.prototype.pdfStream =
-Canvas.prototype.createPDFStream = function(options){
-  return new PDFStream(this, options);
-};
+Canvas.prototype.createPDFStream = function (options) {
+  return new PDFStream(this, options)
+}
 
 Canvas.prototype.jpegStream =
-Canvas.prototype.createJPEGStream = function(options){
-  return new JPEGStream(this, options);
-};
+Canvas.prototype.createJPEGStream = function (options) {
+  return new JPEGStream(this, options)
+}
 
-Canvas.prototype.toDataURL = function(a1, a2, a3){
+Canvas.prototype.toDataURL = function (a1, a2, a3) {
   // valid arg patterns (args -> [type, opts, fn]):
   // [] -> ['image/png', null, null]
   // [qual] -> ['image/png', null, null]
@@ -7327,54 +9441,110 @@ Canvas.prototype.toDataURL = function(a1, a2, a3){
   // ['image/jpeg', opts] -> ['image/jpeg', opts, fn]
   // ['image/jpeg', qual] -> ['image/jpeg', {quality: qual}, fn]
 
-  var type = 'image/png';
-  var opts = {};
-  var fn;
+  let type = 'image/png'
+  let opts = {}
+  let fn
 
-  if ('function' === typeof a1) {
-    fn = a1;
+  if (typeof a1 === 'function') {
+    fn = a1
   } else {
-    if ('string' === typeof a1 && FORMATS.includes(a1.toLowerCase())) {
-      type = a1.toLowerCase();
+    if (typeof a1 === 'string' && FORMATS.includes(a1.toLowerCase())) {
+      type = a1.toLowerCase()
     }
 
-    if ('function' === typeof a2) {
-      fn = a2;
+    if (typeof a2 === 'function') {
+      fn = a2
     } else {
-      if ('object' === typeof a2) {
-        opts = a2;
-      } else if ('number' === typeof a2) {
-        opts = {quality: Math.max(0, Math.min(1, a2))};
+      if (typeof a2 === 'object') {
+        opts = a2
+      } else if (typeof a2 === 'number') {
+        opts = { quality: Math.max(0, Math.min(1, a2)) }
       }
 
-      if ('function' === typeof a3) {
-        fn = a3;
+      if (typeof a3 === 'function') {
+        fn = a3
       } else if (undefined !== a3) {
-        throw new TypeError(typeof a3 + ' is not a function');
+        throw new TypeError(`${typeof a3} is not a function`)
       }
     }
   }
 
   if (this.width === 0 || this.height === 0) {
     // Per spec, if the bitmap has no pixels, return this string:
-    var str = "data:,";
+    const str = 'data:,'
     if (fn) {
-      setTimeout(() => fn(null, str));
-      return;
+      setTimeout(() => fn(null, str))
+      return
     } else {
-      return str;
+      return str
     }
   }
 
   if (fn) {
     this.toBuffer((err, buf) => {
-      if (err) return fn(err);
-      fn(null, `data:${type};base64,${buf.toString('base64')}`);
+      if (err) return fn(err)
+      fn(null, `data:${type};base64,${buf.toString('base64')}`)
     }, type, opts)
   } else {
     return `data:${type};base64,${this.toBuffer(type, opts).toString('base64')}`
   }
+}
+
+
+/***/ }),
+
+/***/ 856:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+module.exports = __webpack_require__(982);
+
+
+/***/ }),
+
+/***/ 861:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const {PassThrough: PassThroughStream} = __webpack_require__(413);
+const zlib = __webpack_require__(761);
+const mimicResponse = __webpack_require__(89);
+
+const decompressResponse = response => {
+	const contentEncoding = (response.headers['content-encoding'] || '').toLowerCase();
+
+	if (!['gzip', 'deflate', 'br'].includes(contentEncoding)) {
+		return response;
+	}
+
+	const isBrotli = contentEncoding === 'br';
+	if (isBrotli && typeof zlib.createBrotliDecompress !== 'function') {
+		return response;
+	}
+
+	const decompress = isBrotli ? zlib.createBrotliDecompress() : zlib.createUnzip();
+	const stream = new PassThroughStream();
+
+	mimicResponse(response, stream);
+
+	decompress.on('error', error => {
+		// Ignore empty response
+		if (error.code === 'Z_BUF_ERROR') {
+			stream.end();
+			return;
+		}
+
+		stream.emit('error', error);
+	});
+
+	response.pipe(decompress).pipe(stream);
+
+	return stream;
 };
+
+module.exports = decompressResponse;
+// TODO: remove this in the next major version
+module.exports.default = decompressResponse;
 
 
 /***/ }),
@@ -7452,10 +9622,124 @@ module.exports = { generateRepositoryList };
 
 /***/ }),
 
+/***/ 893:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+
+var _rng = _interopRequireDefault(__webpack_require__(571));
+
+var _stringify = _interopRequireDefault(__webpack_require__(411));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// **`v1()` - Generate time-based UUID**
+//
+// Inspired by https://github.com/LiosK/UUID.js
+// and http://docs.python.org/library/uuid.html
+let _nodeId;
+
+let _clockseq; // Previous uuid creation time
+
+
+let _lastMSecs = 0;
+let _lastNSecs = 0; // See https://github.com/uuidjs/uuid for API details
+
+function v1(options, buf, offset) {
+  let i = buf && offset || 0;
+  const b = buf || new Array(16);
+  options = options || {};
+  let node = options.node || _nodeId;
+  let clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq; // node and clockseq need to be initialized to random values if they're not
+  // specified.  We do this lazily to minimize issues related to insufficient
+  // system entropy.  See #189
+
+  if (node == null || clockseq == null) {
+    const seedBytes = options.random || (options.rng || _rng.default)();
+
+    if (node == null) {
+      // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+      node = _nodeId = [seedBytes[0] | 0x01, seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]];
+    }
+
+    if (clockseq == null) {
+      // Per 4.2.2, randomize (14 bit) clockseq
+      clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff;
+    }
+  } // UUID timestamps are 100 nano-second units since the Gregorian epoch,
+  // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
+  // time is handled internally as 'msecs' (integer milliseconds) and 'nsecs'
+  // (100-nanoseconds offset from msecs) since unix epoch, 1970-01-01 00:00.
+
+
+  let msecs = options.msecs !== undefined ? options.msecs : Date.now(); // Per 4.2.1.2, use count of uuid's generated during the current clock
+  // cycle to simulate higher resolution clock
+
+  let nsecs = options.nsecs !== undefined ? options.nsecs : _lastNSecs + 1; // Time since last uuid creation (in msecs)
+
+  const dt = msecs - _lastMSecs + (nsecs - _lastNSecs) / 10000; // Per 4.2.1.2, Bump clockseq on clock regression
+
+  if (dt < 0 && options.clockseq === undefined) {
+    clockseq = clockseq + 1 & 0x3fff;
+  } // Reset nsecs if clock regresses (new clockseq) or we've moved onto a new
+  // time interval
+
+
+  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === undefined) {
+    nsecs = 0;
+  } // Per 4.2.1.2 Throw error if too many uuids are requested
+
+
+  if (nsecs >= 10000) {
+    throw new Error("uuid.v1(): Can't create more than 10M uuids/sec");
+  }
+
+  _lastMSecs = msecs;
+  _lastNSecs = nsecs;
+  _clockseq = clockseq; // Per 4.1.4 - Convert from unix epoch to Gregorian epoch
+
+  msecs += 12219292800000; // `time_low`
+
+  const tl = ((msecs & 0xfffffff) * 10000 + nsecs) % 0x100000000;
+  b[i++] = tl >>> 24 & 0xff;
+  b[i++] = tl >>> 16 & 0xff;
+  b[i++] = tl >>> 8 & 0xff;
+  b[i++] = tl & 0xff; // `time_mid`
+
+  const tmh = msecs / 0x100000000 * 10000 & 0xfffffff;
+  b[i++] = tmh >>> 8 & 0xff;
+  b[i++] = tmh & 0xff; // `time_high_and_version`
+
+  b[i++] = tmh >>> 24 & 0xf | 0x10; // include version
+
+  b[i++] = tmh >>> 16 & 0xff; // `clock_seq_hi_and_reserved` (Per 4.2.2 - include variant)
+
+  b[i++] = clockseq >>> 8 | 0x80; // `clock_seq_low`
+
+  b[i++] = clockseq & 0xff; // `node`
+
+  for (let n = 0; n < 6; ++n) {
+    b[i + n] = node[n];
+  }
+
+  return buf || (0, _stringify.default)(b);
+}
+
+var _default = v1;
+exports.default = _default;
+
+/***/ }),
+
 /***/ 896:
 /***/ (function(module) {
 
-module.exports = {"name":"canvas","description":"Canvas graphics API backed by Cairo","version":"2.8.0","author":"TJ Holowaychuk <tj@learnboost.com>","main":"index.js","browser":"browser.js","contributors":["Nathan Rajlich <nathan@tootallnate.net>","Rod Vagg <r@va.gg>","Juriy Zaytsev <kangax@gmail.com>"],"keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"homepage":"https://github.com/Automattic/node-canvas","repository":"git://github.com/Automattic/node-canvas.git","scripts":{"prebenchmark":"node-gyp build","benchmark":"node benchmarks/run.js","lint":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js","test":"mocha test/*.test.js","pretest-server":"node-gyp build","test-server":"node test/server.js","install":"node-pre-gyp install --fallback-to-build","dtslint":"dtslint types"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/Automattic/node-canvas/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"types":"types/index.d.ts","dependencies":{"nan":"^2.14.0","@mapbox/node-pre-gyp":"^1.0.0","simple-get":"^3.0.3"},"devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^4.0.7","express":"^4.16.3","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1","typescript":"^4.2.2"},"engines":{"node":">=6"},"license":"MIT"};
+module.exports = {"name":"canvas","description":"Canvas graphics API backed by Cairo","version":"2.11.2","author":"TJ Holowaychuk <tj@learnboost.com>","main":"index.js","browser":"browser.js","contributors":["Nathan Rajlich <nathan@tootallnate.net>","Rod Vagg <r@va.gg>","Juriy Zaytsev <kangax@gmail.com>"],"keywords":["canvas","graphic","graphics","pixman","cairo","image","images","pdf"],"homepage":"https://github.com/Automattic/node-canvas","repository":"git://github.com/Automattic/node-canvas.git","scripts":{"prebenchmark":"node-gyp build","benchmark":"node benchmarks/run.js","lint":"standard examples/*.js test/server.js test/public/*.js benchmarks/run.js lib/context2d.js util/has_lib.js browser.js index.js","test":"mocha test/*.test.js","pretest-server":"node-gyp build","test-server":"node test/server.js","generate-wpt":"node ./test/wpt/generate.js","test-wpt":"mocha test/wpt/generated/*.js","install":"node-pre-gyp install --fallback-to-build --update-binary","dtslint":"dtslint types"},"binary":{"module_name":"canvas","module_path":"build/Release","host":"https://github.com/Automattic/node-canvas/releases/download/","remote_path":"v{version}","package_name":"{module_name}-v{version}-{node_abi}-{platform}-{libc}-{arch}.tar.gz"},"files":["binding.gyp","lib/","src/","util/","types/index.d.ts"],"types":"types/index.d.ts","dependencies":{"@mapbox/node-pre-gyp":"^1.0.0","nan":"^2.17.0","simple-get":"^3.0.3"},"devDependencies":{"@types/node":"^10.12.18","assert-rejects":"^1.0.0","dtslint":"^4.0.7","express":"^4.16.3","js-yaml":"^4.1.0","mocha":"^5.2.0","pixelmatch":"^4.0.2","standard":"^12.0.1","typescript":"^4.2.2"},"engines":{"node":">=6"},"license":"MIT"};
 
 /***/ }),
 
@@ -7890,44 +10174,380 @@ module.exports = new Type('tag:yaml.org,2002:pairs', {
  * MIT Licensed
  */
 
-var Readable = __webpack_require__(413).Readable;
+const { Readable } = __webpack_require__(413)
+function noop () {}
+
+class PNGStream extends Readable {
+  constructor (canvas, options) {
+    super()
+
+    if (options &&
+      options.palette instanceof Uint8ClampedArray &&
+      options.palette.length % 4 !== 0) {
+      throw new Error('Palette length must be a multiple of 4.')
+    }
+    this.canvas = canvas
+    this.options = options || {}
+  }
+
+  _read () {
+    // For now we're not controlling the c++ code's data emission, so we only
+    // call canvas.streamPNGSync once and let it emit data at will.
+    this._read = noop
+
+    this.canvas.streamPNGSync((err, chunk, len) => {
+      if (err) {
+        this.emit('error', err)
+      } else if (len) {
+        this.push(chunk)
+      } else {
+        this.push(null)
+      }
+    }, this.options)
+  }
+}
+
+module.exports = PNGStream
+
+
+/***/ }),
+
+/***/ 979:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+const util = __webpack_require__(669);
+const process = __webpack_require__(765);
+
+class ClientError extends Error {}
+
+class TimeoutError extends Error {}
+
+function log(prefix, obj) {
+  if (process.env.NODE_ENV !== "test") {
+    const str = obj.map(o => (typeof o === "object" ? inspect(o) : o));
+    if (prefix) {
+      console.log.apply(console, [prefix, ...str]);
+    } else {
+      console.log.apply(console, str);
+    }
+  }
+}
+
+const logger = {
+  level: "info",
+
+  trace: (...str) => {
+    if (logger.level === "trace") {
+      log("[TRACE]", str);
+    }
+  },
+
+  debug: (...str) => {
+    if (logger.level === "trace" || logger.level === "debug") {
+      log("DEBUG", str);
+    }
+  },
+
+  emptyLine: () => log("", []),
+  info: (...str) => log("[INFO] ", str),
+  warn: (...str) => log("[WARN] ", str),
+
+  error: (...str) => {
+    if (str.length === 1) {
+      if (str[0] instanceof Error) {
+        if (logger.level === "trace" || logger.level === "debug") {
+          log(null, [str[0].stack || str[0]]);
+        } else {
+          log("[ERROR] ", [str[0].message || str[0]]);
+        }
+      }
+    } else {
+      log("[ERROR] ", str);
+    }
+  }
+};
+
+function inspect(obj) {
+  return util.inspect(obj, false, null, true);
+}
+
+module.exports = {
+  ClientError,
+  TimeoutError,
+  logger
+};
+
+
+/***/ }),
+
+/***/ 982:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+var net = __webpack_require__(631);
+var tls = __webpack_require__(16);
+var http = __webpack_require__(605);
+var https = __webpack_require__(211);
+var events = __webpack_require__(614);
+var assert = __webpack_require__(357);
 var util = __webpack_require__(669);
 
-var PNGStream = module.exports = function PNGStream(canvas, options) {
-  if (!(this instanceof PNGStream)) {
-    throw new TypeError("Class constructors cannot be invoked without 'new'");
-  }
 
-  Readable.call(this);
+exports.httpOverHttp = httpOverHttp;
+exports.httpsOverHttp = httpsOverHttp;
+exports.httpOverHttps = httpOverHttps;
+exports.httpsOverHttps = httpsOverHttps;
 
-  if (options &&
-    options.palette instanceof Uint8ClampedArray &&
-    options.palette.length % 4 !== 0) {
-    throw new Error("Palette length must be a multiple of 4.");
-  }
-  this.canvas = canvas;
-  this.options = options || {};
-};
 
-util.inherits(PNGStream, Readable);
+function httpOverHttp(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = http.request;
+  return agent;
+}
 
-function noop() {}
+function httpsOverHttp(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = http.request;
+  agent.createSocket = createSecureSocket;
+  agent.defaultPort = 443;
+  return agent;
+}
 
-PNGStream.prototype._read = function _read() {
-  // For now we're not controlling the c++ code's data emission, so we only
-  // call canvas.streamPNGSync once and let it emit data at will.
-  this._read = noop;
+function httpOverHttps(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = https.request;
+  return agent;
+}
+
+function httpsOverHttps(options) {
+  var agent = new TunnelingAgent(options);
+  agent.request = https.request;
+  agent.createSocket = createSecureSocket;
+  agent.defaultPort = 443;
+  return agent;
+}
+
+
+function TunnelingAgent(options) {
   var self = this;
-  self.canvas.streamPNGSync(function(err, chunk, len){
-    if (err) {
-      self.emit('error', err);
-    } else if (len) {
-      self.push(chunk);
-    } else {
-      self.push(null);
+  self.options = options || {};
+  self.proxyOptions = self.options.proxy || {};
+  self.maxSockets = self.options.maxSockets || http.Agent.defaultMaxSockets;
+  self.requests = [];
+  self.sockets = [];
+
+  self.on('free', function onFree(socket, host, port, localAddress) {
+    var options = toOptions(host, port, localAddress);
+    for (var i = 0, len = self.requests.length; i < len; ++i) {
+      var pending = self.requests[i];
+      if (pending.host === options.host && pending.port === options.port) {
+        // Detect the request to connect same origin server,
+        // reuse the connection.
+        self.requests.splice(i, 1);
+        pending.request.onSocket(socket);
+        return;
+      }
     }
-  }, self.options);
+    socket.destroy();
+    self.removeSocket(socket);
+  });
+}
+util.inherits(TunnelingAgent, events.EventEmitter);
+
+TunnelingAgent.prototype.addRequest = function addRequest(req, host, port, localAddress) {
+  var self = this;
+  var options = mergeOptions({request: req}, self.options, toOptions(host, port, localAddress));
+
+  if (self.sockets.length >= this.maxSockets) {
+    // We are over limit so we'll add it to the queue.
+    self.requests.push(options);
+    return;
+  }
+
+  // If we are under maxSockets create a new one.
+  self.createSocket(options, function(socket) {
+    socket.on('free', onFree);
+    socket.on('close', onCloseOrRemove);
+    socket.on('agentRemove', onCloseOrRemove);
+    req.onSocket(socket);
+
+    function onFree() {
+      self.emit('free', socket, options);
+    }
+
+    function onCloseOrRemove(err) {
+      self.removeSocket(socket);
+      socket.removeListener('free', onFree);
+      socket.removeListener('close', onCloseOrRemove);
+      socket.removeListener('agentRemove', onCloseOrRemove);
+    }
+  });
 };
+
+TunnelingAgent.prototype.createSocket = function createSocket(options, cb) {
+  var self = this;
+  var placeholder = {};
+  self.sockets.push(placeholder);
+
+  var connectOptions = mergeOptions({}, self.proxyOptions, {
+    method: 'CONNECT',
+    path: options.host + ':' + options.port,
+    agent: false,
+    headers: {
+      host: options.host + ':' + options.port
+    }
+  });
+  if (options.localAddress) {
+    connectOptions.localAddress = options.localAddress;
+  }
+  if (connectOptions.proxyAuth) {
+    connectOptions.headers = connectOptions.headers || {};
+    connectOptions.headers['Proxy-Authorization'] = 'Basic ' +
+        new Buffer(connectOptions.proxyAuth).toString('base64');
+  }
+
+  debug('making CONNECT request');
+  var connectReq = self.request(connectOptions);
+  connectReq.useChunkedEncodingByDefault = false; // for v0.6
+  connectReq.once('response', onResponse); // for v0.6
+  connectReq.once('upgrade', onUpgrade);   // for v0.6
+  connectReq.once('connect', onConnect);   // for v0.7 or later
+  connectReq.once('error', onError);
+  connectReq.end();
+
+  function onResponse(res) {
+    // Very hacky. This is necessary to avoid http-parser leaks.
+    res.upgrade = true;
+  }
+
+  function onUpgrade(res, socket, head) {
+    // Hacky.
+    process.nextTick(function() {
+      onConnect(res, socket, head);
+    });
+  }
+
+  function onConnect(res, socket, head) {
+    connectReq.removeAllListeners();
+    socket.removeAllListeners();
+
+    if (res.statusCode !== 200) {
+      debug('tunneling socket could not be established, statusCode=%d',
+        res.statusCode);
+      socket.destroy();
+      var error = new Error('tunneling socket could not be established, ' +
+        'statusCode=' + res.statusCode);
+      error.code = 'ECONNRESET';
+      options.request.emit('error', error);
+      self.removeSocket(placeholder);
+      return;
+    }
+    if (head.length > 0) {
+      debug('got illegal response body from proxy');
+      socket.destroy();
+      var error = new Error('got illegal response body from proxy');
+      error.code = 'ECONNRESET';
+      options.request.emit('error', error);
+      self.removeSocket(placeholder);
+      return;
+    }
+    debug('tunneling connection has established');
+    self.sockets[self.sockets.indexOf(placeholder)] = socket;
+    return cb(socket);
+  }
+
+  function onError(cause) {
+    connectReq.removeAllListeners();
+
+    debug('tunneling socket could not be established, cause=%s\n',
+          cause.message, cause.stack);
+    var error = new Error('tunneling socket could not be established, ' +
+                          'cause=' + cause.message);
+    error.code = 'ECONNRESET';
+    options.request.emit('error', error);
+    self.removeSocket(placeholder);
+  }
+};
+
+TunnelingAgent.prototype.removeSocket = function removeSocket(socket) {
+  var pos = this.sockets.indexOf(socket)
+  if (pos === -1) {
+    return;
+  }
+  this.sockets.splice(pos, 1);
+
+  var pending = this.requests.shift();
+  if (pending) {
+    // If we have pending requests and a socket gets closed a new one
+    // needs to be created to take over in the pool for the one that closed.
+    this.createSocket(pending, function(socket) {
+      pending.request.onSocket(socket);
+    });
+  }
+};
+
+function createSecureSocket(options, cb) {
+  var self = this;
+  TunnelingAgent.prototype.createSocket.call(self, options, function(socket) {
+    var hostHeader = options.request.getHeader('host');
+    var tlsOptions = mergeOptions({}, self.options, {
+      socket: socket,
+      servername: hostHeader ? hostHeader.replace(/:.*$/, '') : options.host
+    });
+
+    // 0 is dummy port for v0.6
+    var secureSocket = tls.connect(0, tlsOptions);
+    self.sockets[self.sockets.indexOf(socket)] = secureSocket;
+    cb(secureSocket);
+  });
+}
+
+
+function toOptions(host, port, localAddress) {
+  if (typeof host === 'string') { // since v0.10
+    return {
+      host: host,
+      port: port,
+      localAddress: localAddress
+    };
+  }
+  return host; // for v0.11 or later
+}
+
+function mergeOptions(target) {
+  for (var i = 1, len = arguments.length; i < len; ++i) {
+    var overrides = arguments[i];
+    if (typeof overrides === 'object') {
+      var keys = Object.keys(overrides);
+      for (var j = 0, keyLen = keys.length; j < keyLen; ++j) {
+        var k = keys[j];
+        if (overrides[k] !== undefined) {
+          target[k] = overrides[k];
+        }
+      }
+    }
+  }
+  return target;
+}
+
+
+var debug;
+if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
+  debug = function() {
+    var args = Array.prototype.slice.call(arguments);
+    if (typeof args[0] === 'string') {
+      args[0] = 'TUNNEL: ' + args[0];
+    } else {
+      args.unshift('TUNNEL:');
+    }
+    console.error.apply(console, args);
+  }
+} else {
+  debug = function() {};
+}
+exports.debug = debug; // for test
 
 
 /***/ }),
